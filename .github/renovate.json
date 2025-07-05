@@ -1,0 +1,22 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:best-practices"],
+  "pre-commit": {
+    "enabled": true
+  },
+  "git-submodules": {
+    "enabled": true
+  },
+  "lockFileMaintenance": {
+    "enabled": true
+  },
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 0,
+  "automerge": true,
+  "packageRules": [
+    {
+      "matchPackageNames": ["taiki-e/install-action"],
+      "schedule": "* 0-4 * * 1"
+    }
+  ]
+}
