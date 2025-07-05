@@ -1,0 +1,830 @@
+---
+openapi: 3.0.0
+
+info:
+  title: Amber Electric Public API
+  contact:
+    email: dev@amber.com.au
+    name: Amber Electric Development Team
+    url: https://www.amber.com.au
+  version: 2.0.0
+  description: |-
+    Amber is an Australian-based electricity retailer that pass through the real-time wholesale price of energy.
+
+    Because of Amber's wholesale power prices, you can save hundreds of dollars a year by automating high power devices like air-conditioners, heat pumps and pool pumps.
+
+    This Python library provides an interface to the API, allowing you to react to current and forecast prices, as well as download your historic usage.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+    identifier: Apache-2.0
+
+servers:
+  - url: https://api.amber.com.au/v1
+
+components:
+  securitySchemes:
+    apiKey:
+      type: http
+      scheme: bearer
+  schemas:
+    Channel:
+      type: object
+      description: |-
+        Describes a power meter channel.
+
+        The General channel provides continuous power - it's the channel all of your appliances and lights are attached to.
+
+        Controlled loads are only on for a limited time during the day (usually when the load on the network is low, or generation is high) - you may have your hot water system attached to this channel.
+
+        The feed in channel sends power back to the grid - you will have these types of channels if you have solar or batteries.
+      required:
+        - identifier
+        - type
+        - tariff
+      properties:
+        identifier:
+          type: string
+          description: Identifier of the channel
+          example: E1
+        type:
+          $ref: '#/components/schemas/ChannelType'
+        tariff:
+          type: string
+          description: The tariff code of the channel
+          example: A100
+    SiteStatus:
+      type: string
+      description: |-
+        Site status.
+
+        Pending sites are still in the process of being transferred. Note: We only include sites that have correct address details. If you expect to see a site, but don't, you may need to contact [info@amber.com.au](mailto:info@amber.com.au) to check that the address is correct.
+
+        Active sites are ones that we actively supply electricity to.
+
+        Closed sites are old sites that we no longer supply.
+      enum:
+        - pending
+        - active
+        - closed
+      example: closed
+    Site:
+      type: object
+      required:
+        - id
+        - nmi
+        - channels
+        - network
+        - status
+        - intervalLength
+      properties:
+        id:
+          type: string
+          description: Unique Site Identifier
+          example: 01F5A5CRKMZ5BCX9P1S4V990AM
+        nmi:
+          type: string
+          description: National Metering Identifier (NMI) for the site
+          example: '3052282872'
+          minLength: 10
+          maxLength: 11
+        channels:
+          type: array
+          description: List of channels that are readable from your meter
+          items:
+            $ref: '#/components/schemas/Channel'
+        network:
+          type: string
+          description: The name of the site's network
+          example: Jemena
+        status:
+          $ref: '#/components/schemas/SiteStatus'
+        activeFrom:
+          type: string
+          format: date
+          description: Date the site became active. This date will be in the future for pending sites.
+            It may also be undefined, though if it is, contact [info@amber.com.au](mailto:info@amber.com.au)
+            - there may be an issue with your address. Formatted as a ISO 8601 date when present.
+          example: '2022-01-01'
+        closedOn:
+          type: string
+          format: date
+          description: Date the site closed. Undefined if the site is pending or active. Formatted as
+            a ISO 8601 date when present.
+          example: '2022-05-01'
+        intervalLength:
+          type: number
+          description: Length of interval that you will be billed on. 5 or 30 minutes.
+          enum:
+            - 5
+            - 30
+          default: 30
+          example: 30
+    SpikeStatus:
+      type: string
+      description: Indicates whether this interval will potentially spike, or is currently in a spike
+        state
+      enum:
+        - none
+        - potential
+        - spike
+    PriceDescriptor:
+      type: string
+      description: 'Describes the current price. Gives you an indication of how cheap the price is in
+        relation to the average VMO and DMO. Note: Negative is no longer used. It has been replaced with
+        extremelyLow.'
+      enum:
+        - negative
+        - extremelyLow
+        - veryLow
+        - low
+        - neutral
+        - high
+        - spike
+    RenewableDescriptor:
+      type: string
+      description: Describes the state of renewables. Gives you an indication of how green power is right
+        now
+      enum:
+        - best
+        - great
+        - ok
+        - notGreat
+        - worst
+    ChannelType:
+      type: string
+      description: Meter channel type
+      enum:
+        - general
+        - controlledLoad
+        - feedIn
+      example: general
+    Range:
+      type: object
+      description: When prices are particularly volatile, the API may return a range of NEM spot prices
+        (c/kWh) that are possible.
+      required:
+        - min
+        - max
+      properties:
+        min:
+          type: number
+          description: Estimated minimum price (c/kWh)
+        max:
+          type: number
+          description: Estimated maximum price (c/kWh)
+    AdvancedPrice:
+      type: object
+      description: Amber has created an advanced forecast system, that represents our confidence in the
+        AEMO forecast. The range indicates where we think the price will land for a given interval.
+      required:
+        - low
+        - predicted
+        - high
+      properties:
+        low:
+          type: number
+          description: The lower bound of our prediction band. Price includes network and market fees.
+            (c/kWh).
+          example: 1
+        predicted:
+          type: number
+          description: The predicted price. Use this if you need a single number to forecast against.
+            Price includes network and market fees. (c/kWh).
+          example: 3
+        high:
+          type: number
+          description: The upper bound of our prediction band. Price includes network and market fees.
+            (c/kWh).
+          example: 10
+    TariffInformation:
+      type: object
+      description: Information about how your tariff affects an interval
+      properties:
+        period:
+          type: string
+          enum:
+            - offPeak
+            - shoulder
+            - solarSponge
+            - peak
+          description: The Time of Use period that is currently active. Only available if the site in
+            on a time of use tariff
+        season:
+          type: string
+          enum:
+            - default
+            - summer
+            - autumn
+            - winter
+            - spring
+            - nonSummer
+            - holiday
+            - weekend
+            - weekendHoliday
+            - weekday
+          description: The Time of Use season that is currently active. Only available if the site in
+            on a time of use tariff
+        block:
+          type: number
+          minimum: 1
+          maximum: 2
+          description: The block that is currently active. Only available in the site in on a block tariff
+        demandWindow:
+          type: boolean
+          description: Is this interval currently in the demand window? Only available if the site in
+            on a demand tariff
+    BaseInterval:
+      type: object
+      description: One time interval
+      required:
+        - type
+        - duration
+        - spotPerKwh
+        - perKwh
+        - date
+        - nemTime
+        - startTime
+        - endTime
+        - renewables
+        - channelType
+        - spikeStatus
+        - descriptor
+      properties:
+        type:
+          type: string
+        duration:
+          type: integer
+          description: Length of the interval in minutes.
+          enum:
+            - 5
+            - 15
+            - 30
+        spotPerKwh:
+          type: number
+          description: NEM spot price (c/kWh). This is the price generators get paid to generate electricity,
+            and what drives the variable component of your perKwh price - includes GST
+          example: 6.12
+        perKwh:
+          type: number
+          description: Number of cents you will pay per kilowatt-hour (c/kWh) - includes GST
+          example: 24.33
+        date:
+          type: string
+          description: Date the interval belongs to (in NEM time). This may be different to the date component
+            of nemTime, as the last interval of the day ends at 12:00 the following day. Formatted as
+            a ISO 8601 date
+          example: '2021-05-05'
+          format: date
+        nemTime:
+          type: string
+          description: The interval's NEM time. This represents the time at the end of the interval UTC+10.
+            Formatted as a ISO 8601 time
+          example: '2021-05-06T12:30:00+10:00'
+          format: date-time
+        startTime:
+          type: string
+          description: Start time of the interval in UTC. Formatted as a ISO 8601 time
+          example: '2021-05-05T02:00:01Z'
+          format: date-time
+        endTime:
+          type: string
+          description: End time of the interval in UTC. Formatted as a ISO 8601 time
+          example: '2021-05-05T02:30:00Z'
+          format: date-time
+        renewables:
+          type: number
+          description: Percentage of renewables in the grid
+          example: 45
+        channelType:
+          $ref: '#/components/schemas/ChannelType'
+        tariffInformation:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/TariffInformation'
+        spikeStatus:
+          $ref: '#/components/schemas/SpikeStatus'
+        descriptor:
+          $ref: '#/components/schemas/PriceDescriptor'
+    ActualInterval:
+      allOf:
+        - $ref: '#/components/schemas/BaseInterval'
+        - type: object
+          properties:
+            type:
+              type: string
+              example: ActualInterval
+              enum:
+                - ActualInterval
+          required:
+            - type
+    ForecastInterval:
+      allOf:
+        - $ref: '#/components/schemas/BaseInterval'
+        - type: object
+          description: Returns a forecasted price based on AEMO modelling. This is what AEMO thinks the
+            price will be during the interval.
+          properties:
+            type:
+              type: string
+              example: ForecastInterval
+              enum:
+                - ForecastInterval
+            range:
+              nullable: true
+              $ref: '#/components/schemas/Range'
+            advancedPrice:
+              nullable: true
+              $ref: '#/components/schemas/AdvancedPrice'
+          required:
+            - type
+    CurrentInterval:
+      allOf:
+        - $ref: '#/components/schemas/BaseInterval'
+        - type: object
+          description: Returns the current interval's forecasted price comprised of the weighted average
+            of 5-minute actual prices and 5-minute forecast prices. In the last 5-minutes of the interval,
+            the price represents the final price for that interval.
+          required:
+            - type
+            - estimate
+          properties:
+            type:
+              type: string
+              example: CurrentInterval
+              enum:
+                - CurrentInterval
+            range:
+              nullable: true
+              $ref: '#/components/schemas/Range'
+            estimate:
+              type: boolean
+              description: Shows true the current price is an estimate. Shows false is the price has been
+                locked in.
+            advancedPrice:
+              nullable: true
+              $ref: '#/components/schemas/AdvancedPrice'
+    Interval:
+      oneOf:
+        - $ref: '#/components/schemas/ActualInterval'
+        - $ref: '#/components/schemas/CurrentInterval'
+        - $ref: '#/components/schemas/ForecastInterval'
+    Usage:
+      allOf:
+        - $ref: '#/components/schemas/BaseInterval'
+        - type: object
+          required:
+            - type
+            - channelIdentifier
+            - kwh
+            - quality
+            - cost
+          properties:
+            type:
+              type: string
+              example: Usage
+              enum:
+                - Usage
+            channelIdentifier:
+              type: string
+              description: Meter channel identifier
+              example: E1
+            kwh:
+              type: number
+              description: Number of kWh you consumed or generated. Generated numbers will be negative
+            quality:
+              type: string
+              enum:
+                - estimated
+                - billable
+              description: If the metering company has had trouble contacting your meter, they may make
+                an estimate of your usage for that period. Billable data is data that will appear on your
+                bill.
+            cost:
+              type: number
+              description: The total cost of your consumption or generation for this period - includes
+                GST
+    BaseRenewable:
+      type: object
+      description: Renewable data
+      required:
+        - type
+        - duration
+        - date
+        - nemTime
+        - startTime
+        - endTime
+        - renewables
+        - descriptor
+      properties:
+        type:
+          type: string
+        duration:
+          type: integer
+          description: Length of the interval in minutes.
+          enum:
+            - 5
+            - 15
+            - 30
+        date:
+          type: string
+          description: Date the interval belongs to (in NEM time). This may be different to the date component
+            of nemTime, as the last interval of the day ends at 12:00 the following day. Formatted as
+            a ISO 8601 date
+          example: '2021-05-05'
+          format: date
+        nemTime:
+          type: string
+          description: The interval's NEM time. This represents the time at the end of the interval UTC+10.
+            Formatted as a ISO 8601 time
+          example: '2021-05-06T12:30:00+10:00'
+          format: date-time
+        startTime:
+          type: string
+          description: Start time of the interval in UTC. Formatted as a ISO 8601 time
+          example: '2021-05-05T02:00:01Z'
+          format: date-time
+        endTime:
+          type: string
+          description: End time of the interval in UTC. Formatted as a ISO 8601 time
+          example: '2021-05-05T02:30:00Z'
+          format: date-time
+        renewables:
+          type: number
+          description: Percentage of renewables in the grid
+          example: 45
+        descriptor:
+          $ref: '#/components/schemas/RenewableDescriptor'
+    ActualRenewable:
+      allOf:
+        - $ref: '#/components/schemas/BaseRenewable'
+        - properties:
+            type:
+              type: string
+              example: ActualRenewable
+          required:
+            - type
+    ForecastRenewable:
+      allOf:
+        - $ref: '#/components/schemas/BaseRenewable'
+        - properties:
+            type:
+              type: string
+              example: ForecastRenewable
+          required:
+            - type
+    CurrentRenewable:
+      allOf:
+        - $ref: '#/components/schemas/BaseRenewable'
+        - properties:
+            type:
+              type: string
+              example: CurrentRenewable
+          required:
+            - type
+    Renewable:
+      oneOf:
+        - $ref: '#/components/schemas/ActualRenewable'
+        - $ref: '#/components/schemas/CurrentRenewable'
+        - $ref: '#/components/schemas/ForecastRenewable'
+  headers:
+    RateLimit-Limit:
+      schema:
+        type: integer
+      description: The number of requests allowed per rate limit window
+    RateLimit-Remaining:
+      schema:
+        type: integer
+      description: The remaining quota in the current rate limit window
+    RateLimit-Reset:
+      schema:
+        type: integer
+      description: The number of seconds until the rate limit window resets
+    RateLimit-Policy:
+      schema:
+        type: string
+      description: The rate limit policy.<br>See <a href="https://datatracker.ietf.org/doc/draft-ietf-httpapi-ratelimit-headers/"
+        target="_blank" rel="noopener noreferrer">https://datatracker.ietf.org/doc/draft-ietf-httpapi-ratelimit-headers/</a>
+  responses:
+    UnauthorizedError:
+      description: API key is missing or invalid
+    InternalServerError:
+      description: Internal Server Error
+
+paths:
+  /state/{state}/renewables/current:
+    get:
+      tags:
+        - Amber
+      description: Returns the current percentage of renewables in the grid
+      operationId: getCurrentRenewables
+      security: []
+      parameters:
+        - name: state
+          description: 'State you would like the renewables for. Valid states: nsw, sa, qld, vic'
+          in: path
+          required: true
+          schema:
+            type: string
+          example: vic
+        - name: next
+          description: Return the _next_ number of forecast intervals
+          in: query
+          required: false
+          schema:
+            type: integer
+          example: '48'
+        - name: previous
+          description: Return the _previous_ number of actual intervals.
+          in: query
+          required: false
+          schema:
+            type: integer
+          example: '48'
+        - name: resolution
+          in: query
+          description: 'Specify the required interval duration resolution. Valid options: 5, 30. Default:
+            30'
+          required: false
+          schema:
+            type: integer
+            enum:
+              - 5
+              - 30
+            default: 30
+      responses:
+        '200':
+          description: The current percentage of renewables in the grid.
+          headers:
+            RateLimit-Limit:
+              $ref: '#/components/headers/RateLimit-Limit'
+            RateLimit-Remaining:
+              $ref: '#/components/headers/RateLimit-Remaining'
+            RateLimit-Reset:
+              $ref: '#/components/headers/RateLimit-Reset'
+            RateLimit-Policy:
+              $ref: '#/components/headers/RateLimit-Policy'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Renewable'
+        '400':
+          description: Bad request
+        '404':
+          description: State not found
+        '500':
+          description: Internal Server Error
+  /sites:
+    get:
+      tags:
+        - Amber
+      description: Return all sites linked to your account
+      operationId: getSites
+      security:
+        - apiKey: []
+      parameters: []
+      responses:
+        '200':
+          description: A list of sites.
+          headers:
+            RateLimit-Limit:
+              $ref: '#/components/headers/RateLimit-Limit'
+            RateLimit-Remaining:
+              $ref: '#/components/headers/RateLimit-Remaining'
+            RateLimit-Reset:
+              $ref: '#/components/headers/RateLimit-Reset'
+            RateLimit-Policy:
+              $ref: '#/components/headers/RateLimit-Policy'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Site'
+        '401':
+          description: API key is missing or invalid
+        '500':
+          description: Internal Server Error
+  /sites/{siteId}/prices:
+    get:
+      tags:
+        - Amber
+      description: Returns all the prices between the start and end dates
+      operationId: getPrices
+      security:
+        - apiKey: []
+      parameters:
+        - name: siteId
+          description: ID of the site you are fetching prices for. Can be found using the `/sites` endpoint
+          in: path
+          required: true
+          example: 01J23BAP2SFA218BMV8A73Y9Z9
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          description: Return all prices for each interval on and after this day. Defaults to today. The
+            difference between `startDate` and `endDate` must not exceed 7 days.
+          example: '2021-05-05'
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          description: Return all prices for each interval on and before this day. Defaults to today.
+            The difference between `startDate` and `endDate` must not exceed 7 days.
+          example: '2021-05-05'
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: resolution
+          in: query
+          description: 'Specify the required interval duration resolution. Valid options: 5, 30. Default:
+            Your billing interval length.'
+          required: false
+          schema:
+            type: integer
+            enum:
+              - 5
+              - 30
+      responses:
+        '200':
+          description: 'A list of priced intervals<br><br>Return Order: General > Controlled Load > Feed
+            In.<br><br>**NOTE**: If a channel is added or removed the index offset will change. It is
+            best to filter or group the array by channel type.'
+          headers:
+            RateLimit-Limit:
+              $ref: '#/components/headers/RateLimit-Limit'
+            RateLimit-Remaining:
+              $ref: '#/components/headers/RateLimit-Remaining'
+            RateLimit-Reset:
+              $ref: '#/components/headers/RateLimit-Reset'
+            RateLimit-Policy:
+              $ref: '#/components/headers/RateLimit-Policy'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Interval'
+        '400':
+          description: Bad request
+        '401':
+          description: API key is missing or invalid
+        '404':
+          description: Site not found
+        '422':
+          description: Requested date range is greater than 7 days
+        '500':
+          description: Internal Server Error
+  /sites/{siteId}/prices/current:
+    get:
+      tags:
+        - Amber
+      description: Returns the current price
+      operationId: getCurrentPrices
+      security:
+        - apiKey: []
+      parameters:
+        - name: siteId
+          description: ID of the site you are fetching prices for. Can be found using the `/sites` endpoint
+          in: path
+          required: true
+          example: 01J23BAP2SFA218BMV8A73Y9Z9
+          schema:
+            type: string
+        - name: next
+          description: Return the _next_ number of forecast intervals. The total number of intervals requested
+            must not exceed 2048.
+          in: query
+          example: 48
+          required: false
+          schema:
+            type: integer
+        - name: previous
+          description: Return the _previous_ number of actual intervals. The total number of intervals
+            requested must not exceed 2048.
+          in: query
+          example: 48
+          required: false
+          schema:
+            type: integer
+        - name: resolution
+          in: query
+          description: 'Specify the required interval duration resolution. Valid options: 5, 30. Default:
+            Your billing interval length.'
+          required: false
+          schema:
+            type: integer
+            enum:
+              - 5
+              - 30
+      responses:
+        '200':
+          description: 'The current price on all channels.<br><br>Return Order: General > Controlled Load
+            > Feed In.<br><br>**NOTE**: If a channel is added or removed the index offset will change.
+            It is best to filter or group the array by channel type.'
+          headers:
+            RateLimit-Limit:
+              $ref: '#/components/headers/RateLimit-Limit'
+            RateLimit-Remaining:
+              $ref: '#/components/headers/RateLimit-Remaining'
+            RateLimit-Reset:
+              $ref: '#/components/headers/RateLimit-Reset'
+            RateLimit-Policy:
+              $ref: '#/components/headers/RateLimit-Policy'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Interval'
+        '400':
+          description: Bad request
+        '401':
+          description: API key is missing or invalid
+        '404':
+          description: Site not found
+        '422':
+          description: Requested number of intervals is greater than 2048
+        '500':
+          description: Internal Server Error
+  /sites/{siteId}/usage:
+    get:
+      tags:
+        - Amber
+      description: Returns all usage data between the start and end dates. The API can only return 90-days
+        worth of data.
+      operationId: getUsage
+      security:
+        - apiKey: []
+      parameters:
+        - name: siteId
+          description: ID of the site you are fetching usage for. Can be found using the `/sites` endpoint
+          in: path
+          required: true
+          example: 01J23BAP2SFA218BMV8A73Y9Z9
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          description: Return all usage for each interval on and after this day. The difference between
+            `startDate` and `endDate` must not exceed 7 days.
+          example: '2021-05-05'
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          description: Return all usage for each interval on and before this day. The difference between
+            `startDate` and `endDate` must not exceed 7 days.
+          example: '2021-05-05'
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: resolution
+          in: query
+          description: Deprecated. Usage will always be returned in your billing interval length. If you
+            supply this parameter, it will be ignored.
+          required: false
+          deprecated: true
+          schema:
+            type: integer
+            enum:
+              - 30
+      responses:
+        '200':
+          description: 'Usage for the requested period.<br><br>Return Order: General > Controlled Load
+            > Feed In.<br><br>**NOTE**: If a channel is added or removed the index offset will change.
+            It is best to filter or group the array by channel type.'
+          headers:
+            RateLimit-Limit:
+              $ref: '#/components/headers/RateLimit-Limit'
+            RateLimit-Remaining:
+              $ref: '#/components/headers/RateLimit-Remaining'
+            RateLimit-Reset:
+              $ref: '#/components/headers/RateLimit-Reset'
+            RateLimit-Policy:
+              $ref: '#/components/headers/RateLimit-Policy'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Usage'
+        '400':
+          description: Bad request
+        '401':
+          description: API key is missing or invalid
+        '404':
+          description: Site not found
+        '422':
+          description: Requested date range is greater than 7 days
+        '500':
+          description: Internal Server Error
