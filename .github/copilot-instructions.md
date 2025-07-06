@@ -1,0 +1,3 @@
+-   We use `cargo fmt` for formatting
+-   We use `cargo clippy --fix` for linting and automatic code fixes
+-   We use `cargo nextest` for testing
