@@ -112,15 +112,7 @@ repos:
 
       - id: cargo-clippy
         name: cargo clippy
-        entry: cargo clippy --
-        language: system
-        types:
-          - rust
-        pass_filenames: false
-
-      - id: cargo-check
-        name: cargo check
-        entry: cargo check --
+        entry: cargo clippy --all-targets -- -D warnings
         language: system
         types:
           - rust
