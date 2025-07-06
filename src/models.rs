@@ -3,6 +3,12 @@
 //! This module contains all the data structures and types used to interact with the
 //! [Amber Electric Public API](https://api.amber.com.au/v1).
 //!
+//! ## Core Configuration
+//!
+//! - [`State`] - Australian states for renewable energy data (NSW, VIC, QLD,
+//!   SA)
+//! - [`Resolution`] - Interval resolution options (5-minute, 30-minute)
+//!
 //! ## Sites and Channels
 //!
 //! - [`Site`] - Information about electricity sites linked to your account
@@ -46,8 +52,66 @@
     reason = "Defining deprecated variant for backwards compatibility"
 )]
 
+use core::fmt;
+
 use jiff::{Timestamp, civil::Date};
 use serde::Deserialize;
+
+/// Valid Australian states for renewable energy data
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum State {
+    /// New South Wales
+    Nsw,
+    /// Victoria
+    Vic,
+    /// Queensland
+    Qld,
+    /// South Australia
+    Sa,
+}
+
+impl fmt::Display for State {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            State::Nsw => write!(f, "nsw"),
+            State::Vic => write!(f, "vic"),
+            State::Qld => write!(f, "qld"),
+            State::Sa => write!(f, "sa"),
+        }
+    }
+}
+
+/// Valid interval resolution options
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum Resolution {
+    /// 5-minute intervals
+    FiveMinute = 5,
+    /// 30-minute intervals
+    ThirtyMinute = 30,
+}
+
+impl fmt::Display for Resolution {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Resolution::FiveMinute => write!(f, "5"),
+            Resolution::ThirtyMinute => write!(f, "30"),
+        }
+    }
+}
+
+impl From<Resolution> for u32 {
+    #[inline]
+    fn from(value: Resolution) -> Self {
+        match value {
+            Resolution::FiveMinute => 5,
+            Resolution::ThirtyMinute => 30,
+        }
+    }
+}
 
 /// Meter channel type
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
