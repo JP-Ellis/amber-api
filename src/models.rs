@@ -67,7 +67,7 @@ use jiff::{Timestamp, civil::Date};
 use serde::Deserialize;
 
 /// Valid Australian states for renewable energy data
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum State {
     /// New South Wales
