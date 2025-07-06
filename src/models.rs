@@ -13,15 +13,21 @@
 //!
 //! - [`Site`] - Information about electricity sites linked to your account
 //! - [`Channel`] - Power meter channels (General, Controlled Load, Feed In)
+//! - [`ChannelType`] - Types of meter channels
 //! - [`SiteStatus`] - Status of sites (Pending, Active, Closed)
 //!
 //! ## Pricing Data
 //!
 //! - [`Interval`] - Electricity pricing intervals (Actual, Forecast, Current)
 //! - [`BaseInterval`] - Common fields for all interval types
+//! - [`ActualInterval`] - Confirmed historical pricing data
+//! - [`ForecastInterval`] - Predicted future pricing data
+//! - [`CurrentInterval`] - Real-time pricing data
 //! - [`PriceDescriptor`] - Price categories (extremely low, low, neutral, high,
 //!   spike)
 //! - [`SpikeStatus`] - Spike warning indicators
+//! - [`Range`] - Price ranges when volatile
+//! - [`AdvancedPrice`] - Advanced price prediction with confidence bands
 //!
 //! ## Usage Data
 //!
@@ -32,6 +38,9 @@
 //!
 //! - [`Renewable`] - Renewable energy data (Actual, Forecast, Current)
 //! - [`BaseRenewable`] - Common fields for renewable data
+//! - [`ActualRenewable`] - Confirmed historical renewable values
+//! - [`ForecastRenewable`] - Predicted future renewable values
+//! - [`CurrentRenewable`] - Real-time renewable values
 //! - [`RenewableDescriptor`] - Renewable energy levels (best, great, ok,
 //!   not great, worst)
 //!
