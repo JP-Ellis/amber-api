@@ -139,6 +139,17 @@ pub enum ChannelType {
     FeedIn,
 }
 
+impl fmt::Display for ChannelType {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ChannelType::General => write!(f, "general"),
+            ChannelType::ControlledLoad => write!(f, "controlled load"),
+            ChannelType::FeedIn => write!(f, "feed-in"),
+        }
+    }
+}
+
 /// Describes a power meter channel.
 ///
 /// The General channel provides continuous power - it's the channel all of your
@@ -161,6 +172,17 @@ pub struct Channel {
     pub channel_type: ChannelType,
     /// The tariff code of the channel
     pub tariff: String,
+}
+
+impl fmt::Display for Channel {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} ({}): {}",
+            self.identifier, self.channel_type, self.tariff
+        )
+    }
 }
 
 /// Site status.
@@ -190,6 +212,17 @@ pub enum SiteStatus {
     Closed,
 }
 
+impl fmt::Display for SiteStatus {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SiteStatus::Pending => write!(f, "pending"),
+            SiteStatus::Active => write!(f, "active"),
+            SiteStatus::Closed => write!(f, "closed"),
+        }
+    }
+}
+
 /// Site information
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -215,6 +248,17 @@ pub struct Site {
     pub interval_length: u32,
 }
 
+impl fmt::Display for Site {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Site {} (NMI: {}) - {} on {} network",
+            self.id, self.nmi, self.status, self.network
+        )
+    }
+}
+
 /// Spike status
 ///
 /// Indicates whether this interval will potentially spike, or is currently in a
@@ -229,6 +273,17 @@ pub enum SpikeStatus {
     Potential,
     /// Spike is currently occurring during this interval
     Spike,
+}
+
+impl fmt::Display for SpikeStatus {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SpikeStatus::None => write!(f, "none"),
+            SpikeStatus::Potential => write!(f, "potential"),
+            SpikeStatus::Spike => write!(f, "spike"),
+        }
+    }
 }
 
 /// Describes the current price.
@@ -257,6 +312,21 @@ pub enum PriceDescriptor {
     Spike,
 }
 
+impl fmt::Display for PriceDescriptor {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PriceDescriptor::Negative => write!(f, "negative"),
+            PriceDescriptor::ExtremelyLow => write!(f, "extremely low"),
+            PriceDescriptor::VeryLow => write!(f, "very low"),
+            PriceDescriptor::Low => write!(f, "low"),
+            PriceDescriptor::Neutral => write!(f, "neutral"),
+            PriceDescriptor::High => write!(f, "high"),
+            PriceDescriptor::Spike => write!(f, "spike"),
+        }
+    }
+}
+
 /// Describes the state of renewables.
 ///
 /// Gives you an indication of how green power is right now
@@ -276,6 +346,19 @@ pub enum RenewableDescriptor {
     Worst,
 }
 
+impl fmt::Display for RenewableDescriptor {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RenewableDescriptor::Best => write!(f, "best"),
+            RenewableDescriptor::Great => write!(f, "great"),
+            RenewableDescriptor::Ok => write!(f, "ok"),
+            RenewableDescriptor::NotGreat => write!(f, "not great"),
+            RenewableDescriptor::Worst => write!(f, "worst"),
+        }
+    }
+}
+
 /// When prices are particularly volatile, the API may return a range of NEM
 /// spot prices (c/kWh) that are possible.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -286,6 +369,13 @@ pub struct Range {
     pub min: f64,
     /// Estimated maximum price (c/kWh)
     pub max: f64,
+}
+
+impl fmt::Display for Range {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:.2}-{:.2}c/kWh", self.min, self.max)
+    }
 }
 
 /// Advanced price prediction
@@ -306,6 +396,17 @@ pub struct AdvancedPrice {
     /// The upper bound of Amber's prediction band. Price includes network and
     /// market fees. (c/kWh).
     pub high: f64,
+}
+
+impl fmt::Display for AdvancedPrice {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "L:{:.2} H:{:.2} P:{:.2} c/kWh",
+            self.low, self.predicted, self.high
+        )
+    }
 }
 
 /// Information about how your tariff affects an interval
@@ -331,6 +432,32 @@ pub struct TariffInformation {
     pub demand_window: Option<bool>,
 }
 
+impl fmt::Display for TariffInformation {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut parts = Vec::new();
+
+        if let Some(ref period) = self.period {
+            parts.push(format!("period:{period}"));
+        }
+        if let Some(ref season) = self.season {
+            parts.push(format!("season:{season}"));
+        }
+        if let Some(block) = self.block {
+            parts.push(format!("block:{block}"));
+        }
+        if let Some(demand_window) = self.demand_window {
+            parts.push(format!("demand window:{demand_window}"));
+        }
+
+        if parts.is_empty() {
+            write!(f, "No tariff information")
+        } else {
+            write!(f, "{}", parts.join(", "))
+        }
+    }
+}
+
 /// Time of Use period
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -345,6 +472,18 @@ pub enum TariffPeriod {
     SolarSponge,
     /// Peak period with highest electricity rates
     Peak,
+}
+
+impl fmt::Display for TariffPeriod {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TariffPeriod::OffPeak => write!(f, "off peak"),
+            TariffPeriod::Shoulder => write!(f, "shoulder"),
+            TariffPeriod::SolarSponge => write!(f, "solar sponge"),
+            TariffPeriod::Peak => write!(f, "peak"),
+        }
+    }
 }
 
 /// Time of Use season
@@ -372,6 +511,24 @@ pub enum TariffSeason {
     WeekendHoliday,
     /// Weekday tariff period with standard rates
     Weekday,
+}
+
+impl fmt::Display for TariffSeason {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TariffSeason::Default => write!(f, "default"),
+            TariffSeason::Summer => write!(f, "summer"),
+            TariffSeason::Autumn => write!(f, "autumn"),
+            TariffSeason::Winter => write!(f, "winter"),
+            TariffSeason::Spring => write!(f, "spring"),
+            TariffSeason::NonSummer => write!(f, "non summer"),
+            TariffSeason::Holiday => write!(f, "holiday"),
+            TariffSeason::Weekend => write!(f, "weekend"),
+            TariffSeason::WeekendHoliday => write!(f, "weekend holiday"),
+            TariffSeason::Weekday => write!(f, "weekday"),
+        }
+    }
 }
 
 /// Base interval structure containing common fields
@@ -413,6 +570,32 @@ pub struct BaseInterval {
     pub descriptor: PriceDescriptor,
 }
 
+impl fmt::Display for BaseInterval {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} {} {:.2}c/kWh (spot: {:.2}c/kWh) ({}) {}% renewable",
+            self.date,
+            self.channel_type,
+            self.per_kwh,
+            self.spot_per_kwh,
+            self.descriptor,
+            self.renewables
+        )?;
+
+        if self.spike_status != SpikeStatus::None {
+            write!(f, " spike: {}", self.spike_status)?;
+        }
+
+        if let Some(ref tariff) = self.tariff_information {
+            write!(f, " [{tariff}]")?;
+        }
+
+        Ok(())
+    }
+}
+
 /// Actual interval with confirmed pricing
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -421,6 +604,13 @@ pub struct ActualInterval {
     /// Base interval data with confirmed pricing
     #[serde(flatten)]
     pub base: BaseInterval,
+}
+
+impl fmt::Display for ActualInterval {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Actual: {}", self.base)
+    }
 }
 
 /// Forecast interval with predicted pricing
@@ -435,6 +625,20 @@ pub struct ForecastInterval {
     pub range: Option<Range>,
     /// Advanced price prediction
     pub advanced_price: Option<AdvancedPrice>,
+}
+
+impl fmt::Display for ForecastInterval {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Forecast: {}", self.base)?;
+        if let Some(ref range) = self.range {
+            write!(f, " Range: {range}")?;
+        }
+        if let Some(ref adv_price) = self.advanced_price {
+            write!(f, " Advanced: {adv_price}")?;
+        }
+        Ok(())
+    }
 }
 
 /// Current interval with real-time pricing
@@ -454,6 +658,23 @@ pub struct CurrentInterval {
     pub advanced_price: Option<AdvancedPrice>,
 }
 
+impl fmt::Display for CurrentInterval {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Current: {}", self.base)?;
+        if self.estimate {
+            write!(f, " (estimate)")?;
+        }
+        if let Some(ref range) = self.range {
+            write!(f, " Range: {range}")?;
+        }
+        if let Some(ref adv_price) = self.advanced_price {
+            write!(f, " Advanced: {adv_price}")?;
+        }
+        Ok(())
+    }
+}
+
 /// Interval enum that can be any of the interval types
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(tag = "type")]
@@ -465,6 +686,17 @@ pub enum Interval {
     ForecastInterval(ForecastInterval),
     /// Current interval with real-time pricing data
     CurrentInterval(CurrentInterval),
+}
+
+impl fmt::Display for Interval {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Interval::ActualInterval(actual) => write!(f, "{actual}"),
+            Interval::ForecastInterval(forecast) => write!(f, "{forecast}"),
+            Interval::CurrentInterval(current) => write!(f, "{current}"),
+        }
+    }
 }
 
 /// Usage data for a specific interval
@@ -488,6 +720,17 @@ pub struct Usage {
     pub cost: f64,
 }
 
+impl fmt::Display for Usage {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Usage {} {:.2}kWh ${:.2} ({})",
+            self.channel_identifier, self.kwh, self.cost, self.quality
+        )
+    }
+}
+
 /// Usage data quality
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -497,6 +740,16 @@ pub enum UsageQuality {
     Estimated,
     /// Actual billable data
     Billable,
+}
+
+impl fmt::Display for UsageQuality {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            UsageQuality::Estimated => write!(f, "estimated"),
+            UsageQuality::Billable => write!(f, "billable"),
+        }
+    }
 }
 
 /// Base renewable data structure
@@ -525,6 +778,17 @@ pub struct BaseRenewable {
     pub descriptor: RenewableDescriptor,
 }
 
+impl fmt::Display for BaseRenewable {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} {}% renewable ({})",
+            self.date, self.renewables, self.descriptor
+        )
+    }
+}
+
 /// Actual renewable data
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -533,6 +797,13 @@ pub struct ActualRenewable {
     /// Base renewable data with confirmed historical values
     #[serde(flatten)]
     pub base: BaseRenewable,
+}
+
+impl fmt::Display for ActualRenewable {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Actual: {}", self.base)
+    }
 }
 
 /// Forecast renewable data
@@ -545,6 +816,13 @@ pub struct ForecastRenewable {
     pub base: BaseRenewable,
 }
 
+impl fmt::Display for ForecastRenewable {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Forecast: {}", self.base)
+    }
+}
+
 /// Current renewable data
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -553,6 +831,13 @@ pub struct CurrentRenewable {
     /// Base renewable data with current real-time values
     #[serde(flatten)]
     pub base: BaseRenewable,
+}
+
+impl fmt::Display for CurrentRenewable {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Current: {}", self.base)
+    }
 }
 
 /// Renewable enum that can be any of the renewable types
@@ -566,6 +851,17 @@ pub enum Renewable {
     ForecastRenewable(ForecastRenewable),
     /// Current renewable data with real-time values
     CurrentRenewable(CurrentRenewable),
+}
+
+impl fmt::Display for Renewable {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Renewable::ActualRenewable(actual) => write!(f, "{actual}"),
+            Renewable::ForecastRenewable(forecast) => write!(f, "{forecast}"),
+            Renewable::CurrentRenewable(current) => write!(f, "{current}"),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -1109,5 +1405,612 @@ mod tests {
         assert_eq!(billable.quality, UsageQuality::Billable);
 
         Ok(())
+    }
+
+    // Display trait tests using insta snapshots
+    #[test]
+    fn display_state() {
+        insta::assert_snapshot!(State::Nsw.to_string(), @"nsw");
+        insta::assert_snapshot!(State::Vic.to_string(), @"vic");
+        insta::assert_snapshot!(State::Qld.to_string(), @"qld");
+        insta::assert_snapshot!(State::Sa.to_string(), @"sa");
+    }
+
+    #[test]
+    fn display_resolution() {
+        insta::assert_snapshot!(Resolution::FiveMinute.to_string(), @"5");
+        insta::assert_snapshot!(Resolution::ThirtyMinute.to_string(), @"30");
+    }
+
+    #[test]
+    fn display_channel_type() {
+        insta::assert_snapshot!(ChannelType::General.to_string(), @"general");
+        insta::assert_snapshot!(ChannelType::ControlledLoad.to_string(), @"controlled load");
+        insta::assert_snapshot!(ChannelType::FeedIn.to_string(), @"feed-in");
+    }
+
+    #[test]
+    fn display_channel() {
+        let channel = Channel {
+            identifier: "E1".to_owned(),
+            channel_type: ChannelType::General,
+            tariff: "A100".to_owned(),
+        };
+        insta::assert_snapshot!(channel.to_string(), @"E1 (general): A100");
+    }
+
+    #[test]
+    fn display_site_status() {
+        insta::assert_snapshot!(SiteStatus::Pending.to_string(), @"pending");
+        insta::assert_snapshot!(SiteStatus::Active.to_string(), @"active");
+        insta::assert_snapshot!(SiteStatus::Closed.to_string(), @"closed");
+    }
+
+    #[test]
+    fn display_site() {
+        use jiff::civil::Date;
+        let site = Site {
+            id: "01F5A5CRKMZ5BCX9P1S4V990AM".to_owned(),
+            nmi: "3052282872".to_owned(),
+            channels: vec![],
+            network: "Jemena".to_owned(),
+            status: SiteStatus::Active,
+            active_from: Some(Date::constant(2022, 1, 1)),
+            closed_on: None,
+            interval_length: 30,
+        };
+        insta::assert_snapshot!(site.to_string(), @"Site 01F5A5CRKMZ5BCX9P1S4V990AM (NMI: 3052282872) - active on Jemena network");
+    }
+
+    #[test]
+    fn display_spike_status() {
+        insta::assert_snapshot!(SpikeStatus::None.to_string(), @"none");
+        insta::assert_snapshot!(SpikeStatus::Potential.to_string(), @"potential");
+        insta::assert_snapshot!(SpikeStatus::Spike.to_string(), @"spike");
+    }
+
+    #[test]
+    fn display_price_descriptor() {
+        insta::assert_snapshot!(PriceDescriptor::Negative.to_string(), @"negative");
+        insta::assert_snapshot!(PriceDescriptor::ExtremelyLow.to_string(), @"extremely low");
+        insta::assert_snapshot!(PriceDescriptor::VeryLow.to_string(), @"very low");
+        insta::assert_snapshot!(PriceDescriptor::Low.to_string(), @"low");
+        insta::assert_snapshot!(PriceDescriptor::Neutral.to_string(), @"neutral");
+        insta::assert_snapshot!(PriceDescriptor::High.to_string(), @"high");
+        insta::assert_snapshot!(PriceDescriptor::Spike.to_string(), @"spike");
+    }
+
+    #[test]
+    fn display_renewable_descriptor() {
+        insta::assert_snapshot!(RenewableDescriptor::Best.to_string(), @"best");
+        insta::assert_snapshot!(RenewableDescriptor::Great.to_string(), @"great");
+        insta::assert_snapshot!(RenewableDescriptor::Ok.to_string(), @"ok");
+        insta::assert_snapshot!(RenewableDescriptor::NotGreat.to_string(), @"not great");
+        insta::assert_snapshot!(RenewableDescriptor::Worst.to_string(), @"worst");
+    }
+
+    #[test]
+    fn display_range() {
+        let range = Range {
+            min: 12.34,
+            max: 56.78,
+        };
+        insta::assert_snapshot!(range.to_string(), @"12.34-56.78c/kWh");
+    }
+
+    #[test]
+    fn display_advanced_price() {
+        let advanced_price = AdvancedPrice {
+            low: 1.23,
+            predicted: 4.56,
+            high: 7.89,
+        };
+        insta::assert_snapshot!(advanced_price.to_string(), @"L:1.23 H:4.56 P:7.89 c/kWh");
+    }
+
+    #[test]
+    fn display_tariff_period() {
+        insta::assert_snapshot!(TariffPeriod::OffPeak.to_string(), @"off peak");
+        insta::assert_snapshot!(TariffPeriod::Shoulder.to_string(), @"shoulder");
+        insta::assert_snapshot!(TariffPeriod::SolarSponge.to_string(), @"solar sponge");
+        insta::assert_snapshot!(TariffPeriod::Peak.to_string(), @"peak");
+    }
+
+    #[test]
+    fn display_tariff_season() {
+        insta::assert_snapshot!(TariffSeason::Default.to_string(), @"default");
+        insta::assert_snapshot!(TariffSeason::Summer.to_string(), @"summer");
+        insta::assert_snapshot!(TariffSeason::Autumn.to_string(), @"autumn");
+        insta::assert_snapshot!(TariffSeason::Winter.to_string(), @"winter");
+        insta::assert_snapshot!(TariffSeason::Spring.to_string(), @"spring");
+        insta::assert_snapshot!(TariffSeason::NonSummer.to_string(), @"non summer");
+        insta::assert_snapshot!(TariffSeason::Holiday.to_string(), @"holiday");
+        insta::assert_snapshot!(TariffSeason::Weekend.to_string(), @"weekend");
+        insta::assert_snapshot!(TariffSeason::WeekendHoliday.to_string(), @"weekend holiday");
+        insta::assert_snapshot!(TariffSeason::Weekday.to_string(), @"weekday");
+    }
+
+    #[test]
+    fn display_tariff_information() {
+        // Test with no information
+        let empty_tariff = TariffInformation {
+            period: None,
+            season: None,
+            block: None,
+            demand_window: None,
+        };
+        insta::assert_snapshot!(empty_tariff.to_string(), @"No tariff information");
+
+        // Test with all information
+        let full_tariff = TariffInformation {
+            period: Some(TariffPeriod::Peak),
+            season: Some(TariffSeason::Summer),
+            block: Some(2),
+            demand_window: Some(true),
+        };
+        insta::assert_snapshot!(full_tariff.to_string(), @"period:peak, season:summer, block:2, demand window:true");
+
+        // Test with partial information
+        let partial_tariff = TariffInformation {
+            period: Some(TariffPeriod::OffPeak),
+            season: None,
+            block: Some(1),
+            demand_window: Some(false),
+        };
+        insta::assert_snapshot!(partial_tariff.to_string(), @"period:off peak, block:1, demand window:false");
+    }
+
+    #[test]
+    fn display_base_interval() {
+        use jiff::{Timestamp, civil::Date};
+        // Use parse instead of constant for complex timestamps
+        let nem_time = "2021-05-06T12:30:00+10:00"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let start_time = "2021-05-05T02:00:01Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let end_time = "2021-05-05T02:30:00Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+
+        // Test basic case with no spike status and no tariff information
+        let base_interval_basic = BaseInterval {
+            duration: 5,
+            spot_per_kwh: 6.12,
+            per_kwh: 24.33,
+            date: Date::constant(2021, 5, 5),
+            nem_time,
+            start_time,
+            end_time,
+            renewables: 45.5,
+            channel_type: ChannelType::General,
+            tariff_information: None,
+            spike_status: SpikeStatus::None,
+            descriptor: PriceDescriptor::Low,
+        };
+        insta::assert_snapshot!(base_interval_basic.to_string(), @"2021-05-05 general 24.33c/kWh (spot: 6.12c/kWh) (low) 45.5% renewable");
+
+        // Test with spike status potential
+        let base_interval_potential_spike = BaseInterval {
+            duration: 5,
+            spot_per_kwh: 6.12,
+            per_kwh: 24.33,
+            date: Date::constant(2021, 5, 5),
+            nem_time,
+            start_time,
+            end_time,
+            renewables: 45.5,
+            channel_type: ChannelType::General,
+            tariff_information: None,
+            spike_status: SpikeStatus::Potential,
+            descriptor: PriceDescriptor::High,
+        };
+        insta::assert_snapshot!(base_interval_potential_spike.to_string(), @"2021-05-05 general 24.33c/kWh (spot: 6.12c/kWh) (high) 45.5% renewable spike: potential");
+
+        // Test with spike status spike
+        let base_interval_spike = BaseInterval {
+            duration: 5,
+            spot_per_kwh: 100.50,
+            per_kwh: 120.75,
+            date: Date::constant(2021, 5, 5),
+            nem_time,
+            start_time,
+            end_time,
+            renewables: 25.0,
+            channel_type: ChannelType::General,
+            tariff_information: None,
+            spike_status: SpikeStatus::Spike,
+            descriptor: PriceDescriptor::Spike,
+        };
+        insta::assert_snapshot!(base_interval_spike.to_string(), @"2021-05-05 general 120.75c/kWh (spot: 100.50c/kWh) (spike) 25% renewable spike: spike");
+
+        // Test with tariff information only
+        let tariff_info = TariffInformation {
+            period: Some(TariffPeriod::Peak),
+            season: Some(TariffSeason::Summer),
+            block: Some(2),
+            demand_window: Some(true),
+        };
+        let base_interval_tariff = BaseInterval {
+            duration: 30,
+            spot_per_kwh: 15.20,
+            per_kwh: 35.40,
+            date: Date::constant(2021, 7, 15),
+            nem_time,
+            start_time,
+            end_time,
+            renewables: 30.2,
+            channel_type: ChannelType::ControlledLoad,
+            tariff_information: Some(tariff_info),
+            spike_status: SpikeStatus::None,
+            descriptor: PriceDescriptor::Neutral,
+        };
+        insta::assert_snapshot!(base_interval_tariff.to_string(), @"2021-07-15 controlled load 35.40c/kWh (spot: 15.20c/kWh) (neutral) 30.2% renewable [period:peak, season:summer, block:2, demand window:true]");
+
+        // Test with both spike status and tariff information
+        let tariff_info_combined = TariffInformation {
+            period: Some(TariffPeriod::OffPeak),
+            season: None,
+            block: None,
+            demand_window: Some(false),
+        };
+        let base_interval_combined = BaseInterval {
+            duration: 5,
+            spot_per_kwh: 8.75,
+            per_kwh: 28.90,
+            date: Date::constant(2021, 12, 25),
+            nem_time,
+            start_time,
+            end_time,
+            renewables: 60.8,
+            channel_type: ChannelType::FeedIn,
+            tariff_information: Some(tariff_info_combined),
+            spike_status: SpikeStatus::Potential,
+            descriptor: PriceDescriptor::VeryLow,
+        };
+        insta::assert_snapshot!(base_interval_combined.to_string(), @"2021-12-25 feed-in 28.90c/kWh (spot: 8.75c/kWh) (very low) 60.8% renewable spike: potential [period:off peak, demand window:false]");
+    }
+
+    #[test]
+    fn display_actual_interval() {
+        use jiff::{Timestamp, civil::Date};
+        let nem_time = "2021-05-06T12:30:00+10:00"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let start_time = "2021-05-05T02:00:01Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let end_time = "2021-05-05T02:30:00Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+
+        let actual_interval = ActualInterval {
+            base: BaseInterval {
+                duration: 5,
+                spot_per_kwh: 6.12,
+                per_kwh: 24.33,
+                date: Date::constant(2021, 5, 5),
+                nem_time,
+                start_time,
+                end_time,
+                renewables: 45.5,
+                channel_type: ChannelType::General,
+                tariff_information: None,
+                spike_status: SpikeStatus::None,
+                descriptor: PriceDescriptor::Low,
+            },
+        };
+        insta::assert_snapshot!(actual_interval.to_string(), @"Actual: 2021-05-05 general 24.33c/kWh (spot: 6.12c/kWh) (low) 45.5% renewable");
+    }
+
+    #[test]
+    fn display_forecast_interval() {
+        use jiff::{Timestamp, civil::Date};
+        let nem_time = "2021-05-06T12:30:00+10:00"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let start_time = "2021-05-05T02:00:01Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let end_time = "2021-05-05T02:30:00Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+
+        let forecast_interval = ForecastInterval {
+            base: BaseInterval {
+                duration: 5,
+                spot_per_kwh: 6.12,
+                per_kwh: 24.33,
+                date: Date::constant(2021, 5, 5),
+                nem_time,
+                start_time,
+                end_time,
+                renewables: 45.5,
+                channel_type: ChannelType::General,
+                tariff_information: None,
+                spike_status: SpikeStatus::Potential,
+                descriptor: PriceDescriptor::High,
+            },
+            range: Some(Range {
+                min: 10.0,
+                max: 30.0,
+            }),
+            advanced_price: Some(AdvancedPrice {
+                low: 15.0,
+                predicted: 20.0,
+                high: 25.0,
+            }),
+        };
+        insta::assert_snapshot!(forecast_interval.to_string(), @"Forecast: 2021-05-05 general 24.33c/kWh (spot: 6.12c/kWh) (high) 45.5% renewable spike: potential Range: 10.00-30.00c/kWh Advanced: L:15.00 H:20.00 P:25.00 c/kWh");
+    }
+
+    #[test]
+    fn display_current_interval() {
+        use jiff::{Timestamp, civil::Date};
+        let nem_time = "2021-05-06T12:30:00+10:00"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let start_time = "2021-05-05T02:00:01Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let end_time = "2021-05-05T02:30:00Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+
+        let current_interval = CurrentInterval {
+            base: BaseInterval {
+                duration: 5,
+                spot_per_kwh: 6.12,
+                per_kwh: 24.33,
+                date: Date::constant(2021, 5, 5),
+                nem_time,
+                start_time,
+                end_time,
+                renewables: 45.5,
+                channel_type: ChannelType::FeedIn,
+                tariff_information: None,
+                spike_status: SpikeStatus::Spike,
+                descriptor: PriceDescriptor::Spike,
+            },
+            range: Some(Range {
+                min: 50.0,
+                max: 100.0,
+            }),
+            estimate: true,
+            advanced_price: Some(AdvancedPrice {
+                low: 60.0,
+                predicted: 75.0,
+                high: 90.0,
+            }),
+        };
+        insta::assert_snapshot!(current_interval.to_string(), @"Current: 2021-05-05 feed-in 24.33c/kWh (spot: 6.12c/kWh) (spike) 45.5% renewable spike: spike (estimate) Range: 50.00-100.00c/kWh Advanced: L:60.00 H:75.00 P:90.00 c/kWh");
+    }
+
+    #[test]
+    fn display_interval_enum() {
+        use jiff::{Timestamp, civil::Date};
+        let nem_time = "2021-05-06T12:30:00+10:00"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let start_time = "2021-05-05T02:00:01Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let end_time = "2021-05-05T02:30:00Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+
+        let base = BaseInterval {
+            duration: 5,
+            spot_per_kwh: 6.12,
+            per_kwh: 24.33,
+            date: Date::constant(2021, 5, 5),
+            nem_time,
+            start_time,
+            end_time,
+            renewables: 45.5,
+            channel_type: ChannelType::General,
+            tariff_information: None,
+            spike_status: SpikeStatus::None,
+            descriptor: PriceDescriptor::Neutral,
+        };
+
+        let actual_interval = Interval::ActualInterval(ActualInterval { base: base.clone() });
+        let forecast_interval = Interval::ForecastInterval(ForecastInterval {
+            base: base.clone(),
+            range: None,
+            advanced_price: None,
+        });
+        let current_interval = Interval::CurrentInterval(CurrentInterval {
+            base,
+            range: None,
+            estimate: false,
+            advanced_price: None,
+        });
+
+        insta::assert_snapshot!(actual_interval.to_string(), @"Actual: 2021-05-05 general 24.33c/kWh (spot: 6.12c/kWh) (neutral) 45.5% renewable");
+        insta::assert_snapshot!(forecast_interval.to_string(), @"Forecast: 2021-05-05 general 24.33c/kWh (spot: 6.12c/kWh) (neutral) 45.5% renewable");
+        insta::assert_snapshot!(current_interval.to_string(), @"Current: 2021-05-05 general 24.33c/kWh (spot: 6.12c/kWh) (neutral) 45.5% renewable");
+    }
+
+    #[test]
+    fn display_usage_quality() {
+        insta::assert_snapshot!(UsageQuality::Estimated.to_string(), @"estimated");
+        insta::assert_snapshot!(UsageQuality::Billable.to_string(), @"billable");
+    }
+
+    #[test]
+    fn display_usage() {
+        use jiff::{Timestamp, civil::Date};
+        let nem_time = "2021-05-06T12:30:00+10:00"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let start_time = "2021-05-05T02:00:01Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let end_time = "2021-05-05T02:30:00Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+
+        let usage = Usage {
+            base: BaseInterval {
+                duration: 5,
+                spot_per_kwh: 6.12,
+                per_kwh: 24.33,
+                date: Date::constant(2021, 5, 5),
+                nem_time,
+                start_time,
+                end_time,
+                renewables: 45.5,
+                channel_type: ChannelType::General,
+                tariff_information: None,
+                spike_status: SpikeStatus::None,
+                descriptor: PriceDescriptor::Low,
+            },
+            channel_identifier: "E1".to_owned(),
+            kwh: 1.25,
+            quality: UsageQuality::Billable,
+            cost: 30.41,
+        };
+        insta::assert_snapshot!(usage.to_string(), @"Usage E1 1.25kWh $30.41 (billable)");
+    }
+
+    #[test]
+    fn display_base_renewable() {
+        use jiff::{Timestamp, civil::Date};
+        let nem_time = "2021-05-06T12:30:00+10:00"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let start_time = "2021-05-05T02:00:01Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let end_time = "2021-05-05T02:30:00Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+
+        let base_renewable = BaseRenewable {
+            duration: 5,
+            date: Date::constant(2021, 5, 5),
+            nem_time,
+            start_time,
+            end_time,
+            renewables: 78.5,
+            descriptor: RenewableDescriptor::Great,
+        };
+        insta::assert_snapshot!(base_renewable.to_string(), @"2021-05-05 78.5% renewable (great)");
+    }
+
+    #[test]
+    fn display_actual_renewable() {
+        use jiff::{Timestamp, civil::Date};
+        let nem_time = "2021-05-06T12:30:00+10:00"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let start_time = "2021-05-05T02:00:01Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let end_time = "2021-05-05T02:30:00Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+
+        let actual_renewable = ActualRenewable {
+            base: BaseRenewable {
+                duration: 5,
+                date: Date::constant(2021, 5, 5),
+                nem_time,
+                start_time,
+                end_time,
+                renewables: 78.5,
+                descriptor: RenewableDescriptor::Great,
+            },
+        };
+        insta::assert_snapshot!(actual_renewable.to_string(), @"Actual: 2021-05-05 78.5% renewable (great)");
+    }
+
+    #[test]
+    fn display_forecast_renewable() {
+        use jiff::{Timestamp, civil::Date};
+        let nem_time = "2021-05-06T12:30:00+10:00"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let start_time = "2021-05-05T02:00:01Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let end_time = "2021-05-05T02:30:00Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+
+        let forecast_renewable = ForecastRenewable {
+            base: BaseRenewable {
+                duration: 5,
+                date: Date::constant(2021, 5, 5),
+                nem_time,
+                start_time,
+                end_time,
+                renewables: 78.5,
+                descriptor: RenewableDescriptor::Great,
+            },
+        };
+        insta::assert_snapshot!(forecast_renewable.to_string(), @"Forecast: 2021-05-05 78.5% renewable (great)");
+    }
+
+    #[test]
+    fn display_current_renewable() {
+        use jiff::{Timestamp, civil::Date};
+        let nem_time = "2021-05-06T12:30:00+10:00"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let start_time = "2021-05-05T02:00:01Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let end_time = "2021-05-05T02:30:00Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+
+        let current_renewable = CurrentRenewable {
+            base: BaseRenewable {
+                duration: 5,
+                date: Date::constant(2021, 5, 5),
+                nem_time,
+                start_time,
+                end_time,
+                renewables: 78.5,
+                descriptor: RenewableDescriptor::Great,
+            },
+        };
+        insta::assert_snapshot!(current_renewable.to_string(), @"Current: 2021-05-05 78.5% renewable (great)");
+    }
+
+    #[test]
+    fn display_renewable_enum() {
+        use jiff::{Timestamp, civil::Date};
+        let nem_time = "2021-05-06T12:30:00+10:00"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let start_time = "2021-05-05T02:00:01Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+        let end_time = "2021-05-05T02:30:00Z"
+            .parse::<Timestamp>()
+            .expect("valid timestamp");
+
+        let base = BaseRenewable {
+            duration: 5,
+            date: Date::constant(2021, 5, 5),
+            nem_time,
+            start_time,
+            end_time,
+            renewables: 78.5,
+            descriptor: RenewableDescriptor::Great,
+        };
+
+        let actual_renewable = Renewable::ActualRenewable(ActualRenewable { base: base.clone() });
+        let forecast_renewable =
+            Renewable::ForecastRenewable(ForecastRenewable { base: base.clone() });
+        let current_renewable = Renewable::CurrentRenewable(CurrentRenewable { base });
+
+        insta::assert_snapshot!(actual_renewable.to_string(), @"Actual: 2021-05-05 78.5% renewable (great)");
+        insta::assert_snapshot!(forecast_renewable.to_string(), @"Forecast: 2021-05-05 78.5% renewable (great)");
+        insta::assert_snapshot!(current_renewable.to_string(), @"Current: 2021-05-05 78.5% renewable (great)");
     }
 }
