@@ -379,9 +379,6 @@ pub enum TariffSeason {
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct BaseInterval {
-    /// Interval type
-    #[serde(rename = "type")]
-    pub interval_type: String,
     /// Length of the interval in minutes.
     pub duration: u32,
     /// NEM spot price (c/kWh).
@@ -507,9 +504,6 @@ pub enum UsageQuality {
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct BaseRenewable {
-    /// Renewable data type
-    #[serde(rename = "type")]
-    pub renewable_type: String,
     /// Length of the interval in minutes.
     pub duration: u32,
     /// Date the interval belongs to (in NEM time).
@@ -572,4 +566,548 @@ pub enum Renewable {
     ForecastRenewable(ForecastRenewable),
     /// Current renewable data with real-time values
     CurrentRenewable(CurrentRenewable),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use anyhow::Result;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn actual_renewable_deserialisation_strict() -> Result<()> {
+        let json = r#"{
+            "type": "ActualRenewable",
+            "duration": 5,
+            "date": "2021-05-05",
+            "nemTime": "2021-05-06T12:30:00+10:00",
+            "startTime": "2021-05-05T02:00:01Z",
+            "endTime": "2021-05-05T02:30:00Z",
+            "renewables": 45,
+            "descriptor": "best"
+        }"#;
+
+        let actual: ActualRenewable = serde_json::from_str(json)?;
+        assert_eq!(actual.base.duration, 5);
+        assert_eq!(actual.base.date.to_string(), "2021-05-05");
+        assert!(44.0_f64 < actual.base.renewables && actual.base.renewables < 46.0_f64);
+        assert_eq!(actual.base.descriptor, RenewableDescriptor::Best);
+
+        Ok(())
+    }
+
+    #[test]
+    fn actual_renewable_deserialisation() -> Result<()> {
+        let json = r#"{
+            "type": "ActualRenewable",
+            "duration": 5,
+            "date": "2021-05-05",
+            "nemTime": "2021-05-06T12:30:00+10:00",
+            "startTime": "2021-05-05T02:00:01Z",
+            "endTime": "2021-05-05T02:30:00Z",
+            "renewables": 45,
+            "descriptor": "best"
+        }"#;
+
+        let renewable: Renewable = serde_json::from_str(json)?;
+        if let Renewable::ActualRenewable(actual) = renewable {
+            assert_eq!(actual.base.duration, 5);
+            assert_eq!(actual.base.date.to_string(), "2021-05-05");
+            assert!(44.0_f64 < actual.base.renewables && actual.base.renewables < 46.0_f64);
+            assert_eq!(actual.base.descriptor, RenewableDescriptor::Best);
+        } else {
+            panic!("Expected ActualRenewable variant");
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn current_renewable_deserialisation_strict() -> Result<()> {
+        let json = r#"{
+            "type": "CurrentRenewable",
+            "duration": 5,
+            "date": "2021-05-05",
+            "nemTime": "2021-05-06T12:30:00+10:00",
+            "startTime": "2021-05-05T02:00:01Z",
+            "endTime": "2021-05-05T02:30:00Z",
+            "renewables": 45,
+            "descriptor": "best"
+        }"#;
+
+        let current: CurrentRenewable = serde_json::from_str(json)?;
+        assert_eq!(current.base.duration, 5);
+        assert_eq!(current.base.date.to_string(), "2021-05-05");
+        assert!(44.0_f64 < current.base.renewables && current.base.renewables < 46.0_f64);
+        assert_eq!(current.base.descriptor, RenewableDescriptor::Best);
+
+        Ok(())
+    }
+
+    #[test]
+    fn current_renewable_deserialisation() -> Result<()> {
+        let json = r#"{
+            "type": "CurrentRenewable",
+            "duration": 5,
+            "date": "2021-05-05",
+            "nemTime": "2021-05-06T12:30:00+10:00",
+            "startTime": "2021-05-05T02:00:01Z",
+            "endTime": "2021-05-05T02:30:00Z",
+            "renewables": 45,
+            "descriptor": "best"
+        }"#;
+
+        let renewable: Renewable = serde_json::from_str(json)?;
+        if let Renewable::CurrentRenewable(current) = renewable {
+            assert_eq!(current.base.duration, 5);
+            assert_eq!(current.base.date.to_string(), "2021-05-05");
+            assert!(44.0_f64 < current.base.renewables && current.base.renewables < 46.0_f64);
+            assert_eq!(current.base.descriptor, RenewableDescriptor::Best);
+        } else {
+            panic!("Expected CurrentRenewable variant");
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn forecast_renewable_deserialisation_strict() -> Result<()> {
+        let json = r#"{
+            "type": "ForecastRenewable",
+            "duration": 5,
+            "date": "2021-05-05",
+            "nemTime": "2021-05-06T12:30:00+10:00",
+            "startTime": "2021-05-05T02:00:01Z",
+            "endTime": "2021-05-05T02:30:00Z",
+            "renewables": 45,
+            "descriptor": "best"
+        }"#;
+
+        let forecast: ForecastRenewable = serde_json::from_str(json)?;
+        assert_eq!(forecast.base.duration, 5);
+        assert_eq!(forecast.base.date.to_string(), "2021-05-05");
+        assert!(44.0_f64 < forecast.base.renewables && forecast.base.renewables < 46.0_f64);
+        assert_eq!(forecast.base.descriptor, RenewableDescriptor::Best);
+
+        Ok(())
+    }
+
+    #[test]
+    fn forecast_renewable_deserialisation() -> Result<()> {
+        let json = r#"{
+            "type": "ForecastRenewable",
+            "duration": 5,
+            "date": "2021-05-05",
+            "nemTime": "2021-05-06T12:30:00+10:00",
+            "startTime": "2021-05-05T02:00:01Z",
+            "endTime": "2021-05-05T02:30:00Z",
+            "renewables": 45,
+            "descriptor": "best"
+        }"#;
+
+        let renewable: Renewable = serde_json::from_str(json)?;
+        if let Renewable::ForecastRenewable(forecast) = renewable {
+            assert_eq!(forecast.base.duration, 5);
+            assert_eq!(forecast.base.date.to_string(), "2021-05-05");
+            assert!(44.0_f64 < forecast.base.renewables && forecast.base.renewables < 46.0_f64);
+            assert_eq!(forecast.base.descriptor, RenewableDescriptor::Best);
+        } else {
+            panic!("Expected ForecastRenewable variant");
+        }
+
+        Ok(())
+    }
+
+    // Test Site deserialization
+    #[test]
+    fn site_deserialisation() -> Result<()> {
+        let json = r#"[
+            {
+                "id": "01F5A5CRKMZ5BCX9P1S4V990AM",
+                "nmi": "3052282872",
+                "channels": [
+                    {
+                        "identifier": "E1",
+                        "type": "general",
+                        "tariff": "A100"
+                    }
+                ],
+                "network": "Jemena",
+                "status": "closed",
+                "activeFrom": "2022-01-01",
+                "closedOn": "2022-05-01",
+                "intervalLength": 30
+            }
+        ]"#;
+
+        let sites: Vec<Site> = serde_json::from_str(json)?;
+        assert_eq!(sites.len(), 1);
+
+        let site = sites.first().expect("Expected at least one site");
+        assert_eq!(site.id, "01F5A5CRKMZ5BCX9P1S4V990AM");
+        assert_eq!(site.nmi, "3052282872");
+        assert_eq!(site.channels.len(), 1);
+
+        let channel = site
+            .channels
+            .first()
+            .expect("Expected at least one channel");
+        assert_eq!(channel.identifier, "E1");
+        assert_eq!(channel.channel_type, ChannelType::General);
+        assert_eq!(channel.tariff, "A100");
+
+        assert_eq!(site.network, "Jemena");
+        assert_eq!(site.status, SiteStatus::Closed);
+        assert_eq!(
+            site.active_from
+                .expect("Expected active_from date")
+                .to_string(),
+            "2022-01-01"
+        );
+        assert_eq!(
+            site.closed_on.expect("Expected closed_on date").to_string(),
+            "2022-05-01"
+        );
+        assert_eq!(site.interval_length, 30);
+
+        Ok(())
+    }
+
+    // Test Interval deserialization (prices endpoint)
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Comprehensive test for all interval types"
+    )]
+    fn prices_interval_deserialisation() -> Result<()> {
+        let json = r#"[
+            {
+                "type": "ActualInterval",
+                "duration": 5,
+                "spotPerKwh": 6.12,
+                "perKwh": 24.33,
+                "date": "2021-05-05",
+                "nemTime": "2021-05-06T12:30:00+10:00",
+                "startTime": "2021-05-05T02:00:01Z",
+                "endTime": "2021-05-05T02:30:00Z",
+                "renewables": 45,
+                "channelType": "general",
+                "tariffInformation": null,
+                "spikeStatus": "none",
+                "descriptor": "negative"
+            },
+            {
+                "type": "CurrentInterval",
+                "duration": 5,
+                "spotPerKwh": 6.12,
+                "perKwh": 24.33,
+                "date": "2021-05-05",
+                "nemTime": "2021-05-06T12:30:00+10:00",
+                "startTime": "2021-05-05T02:00:01Z",
+                "endTime": "2021-05-05T02:30:00Z",
+                "renewables": 45,
+                "channelType": "general",
+                "tariffInformation": null,
+                "spikeStatus": "none",
+                "descriptor": "negative",
+                "range": {
+                    "min": 0,
+                    "max": 0
+                },
+                "estimate": true,
+                "advancedPrice": {
+                    "low": 1,
+                    "predicted": 3,
+                    "high": 10
+                }
+            },
+            {
+                "type": "ForecastInterval",
+                "duration": 5,
+                "spotPerKwh": 6.12,
+                "perKwh": 24.33,
+                "date": "2021-05-05",
+                "nemTime": "2021-05-06T12:30:00+10:00",
+                "startTime": "2021-05-05T02:00:01Z",
+                "endTime": "2021-05-05T02:30:00Z",
+                "renewables": 45,
+                "channelType": "general",
+                "tariffInformation": null,
+                "spikeStatus": "none",
+                "descriptor": "negative",
+                "range": {
+                    "min": 0,
+                    "max": 0
+                },
+                "advancedPrice": {
+                    "low": 1,
+                    "predicted": 3,
+                    "high": 10
+                }
+            }
+        ]"#;
+
+        let intervals: Vec<Interval> = serde_json::from_str(json)?;
+        assert_eq!(intervals.len(), 3);
+
+        // Test ActualInterval
+        if let Some(Interval::ActualInterval(actual)) = intervals.first() {
+            assert_eq!(actual.base.duration, 5);
+            assert!((actual.base.spot_per_kwh - 6.12_f64).abs() < f64::EPSILON);
+            assert!((actual.base.per_kwh - 24.33_f64).abs() < f64::EPSILON);
+            assert_eq!(actual.base.date.to_string(), "2021-05-05");
+            assert!((actual.base.renewables - 45.0_f64).abs() < f64::EPSILON);
+            assert_eq!(actual.base.channel_type, ChannelType::General);
+            assert_eq!(actual.base.spike_status, SpikeStatus::None);
+            assert_eq!(actual.base.descriptor, PriceDescriptor::Negative);
+        } else {
+            panic!("Expected ActualInterval at index 0");
+        }
+
+        // Test CurrentInterval
+        if let Some(Interval::CurrentInterval(current)) = intervals.get(1) {
+            assert_eq!(current.base.duration, 5);
+            assert!((current.base.spot_per_kwh - 6.12_f64).abs() < f64::EPSILON);
+            assert!((current.base.per_kwh - 24.33_f64).abs() < f64::EPSILON);
+            assert_eq!(current.estimate, true);
+            assert!(current.range.is_some());
+            assert!(current.advanced_price.is_some());
+
+            if let Some(ref range) = current.range {
+                assert!((range.min - 0.0_f64).abs() < f64::EPSILON);
+                assert!((range.max - 0.0_f64).abs() < f64::EPSILON);
+            }
+
+            if let Some(ref adv_price) = current.advanced_price {
+                assert!((adv_price.low - 1.0_f64).abs() < f64::EPSILON);
+                assert!((adv_price.predicted - 3.0_f64).abs() < f64::EPSILON);
+                assert!((adv_price.high - 10.0_f64).abs() < f64::EPSILON);
+            }
+        } else {
+            panic!("Expected CurrentInterval at index 1");
+        }
+
+        // Test ForecastInterval
+        if let Some(Interval::ForecastInterval(forecast)) = intervals.get(2) {
+            assert_eq!(forecast.base.duration, 5);
+            assert!((forecast.base.spot_per_kwh - 6.12_f64).abs() < f64::EPSILON);
+            assert!((forecast.base.per_kwh - 24.33_f64).abs() < f64::EPSILON);
+            assert!(forecast.range.is_some());
+            assert!(forecast.advanced_price.is_some());
+        } else {
+            panic!("Expected ForecastInterval at index 2");
+        }
+
+        Ok(())
+    }
+
+    // Test Current Prices endpoint (same as prices but for current endpoint)
+    #[test]
+    fn current_prices_interval_deserialisation() -> Result<()> {
+        let json = r#"[
+            {
+                "type": "ActualInterval",
+                "duration": 5,
+                "spotPerKwh": 6.12,
+                "perKwh": 24.33,
+                "date": "2021-05-05",
+                "nemTime": "2021-05-06T12:30:00+10:00",
+                "startTime": "2021-05-05T02:00:01Z",
+                "endTime": "2021-05-05T02:30:00Z",
+                "renewables": 45,
+                "channelType": "general",
+                "tariffInformation": null,
+                "spikeStatus": "none",
+                "descriptor": "negative"
+            },
+            {
+                "type": "CurrentInterval",
+                "duration": 5,
+                "spotPerKwh": 6.12,
+                "perKwh": 24.33,
+                "date": "2021-05-05",
+                "nemTime": "2021-05-06T12:30:00+10:00",
+                "startTime": "2021-05-05T02:00:01Z",
+                "endTime": "2021-05-05T02:30:00Z",
+                "renewables": 45,
+                "channelType": "general",
+                "tariffInformation": null,
+                "spikeStatus": "none",
+                "descriptor": "negative",
+                "range": {
+                    "min": 0,
+                    "max": 0
+                },
+                "estimate": true,
+                "advancedPrice": {
+                    "low": 1,
+                    "predicted": 3,
+                    "high": 10
+                }
+            },
+            {
+                "type": "ForecastInterval",
+                "duration": 5,
+                "spotPerKwh": 6.12,
+                "perKwh": 24.33,
+                "date": "2021-05-05",
+                "nemTime": "2021-05-06T12:30:00+10:00",
+                "startTime": "2021-05-05T02:00:01Z",
+                "endTime": "2021-05-05T02:30:00Z",
+                "renewables": 45,
+                "channelType": "general",
+                "tariffInformation": null,
+                "spikeStatus": "none",
+                "descriptor": "negative",
+                "range": {
+                    "min": 0,
+                    "max": 0
+                },
+                "advancedPrice": {
+                    "low": 1,
+                    "predicted": 3,
+                    "high": 10
+                }
+            }
+        ]"#;
+
+        let intervals: Vec<Interval> = serde_json::from_str(json)?;
+        assert_eq!(intervals.len(), 3);
+
+        // Verify we can deserialize all three types in the current prices endpoint
+        let first_interval = intervals.first().expect("Expected at least one interval");
+        let second_interval = intervals.get(1).expect("Expected at least two intervals");
+        let third_interval = intervals.get(2).expect("Expected at least three intervals");
+
+        assert!(matches!(first_interval, Interval::ActualInterval(_)));
+        assert!(matches!(second_interval, Interval::CurrentInterval(_)));
+        assert!(matches!(third_interval, Interval::ForecastInterval(_)));
+
+        Ok(())
+    }
+
+    // Test Usage deserialization
+    #[test]
+    fn usage_deserialisation() -> Result<()> {
+        let json = r#"[
+            {
+                "type": "Usage",
+                "duration": 5,
+                "spotPerKwh": 6.12,
+                "perKwh": 24.33,
+                "date": "2021-05-05",
+                "nemTime": "2021-05-06T12:30:00+10:00",
+                "startTime": "2021-05-05T02:00:01Z",
+                "endTime": "2021-05-05T02:30:00Z",
+                "renewables": 45,
+                "channelType": "general",
+                "tariffInformation": null,
+                "spikeStatus": "none",
+                "descriptor": "negative",
+                "channelIdentifier": "E1",
+                "kwh": 0,
+                "quality": "estimated",
+                "cost": 0
+            }
+        ]"#;
+
+        let usage_data: Vec<Usage> = serde_json::from_str(json)?;
+        assert_eq!(usage_data.len(), 1);
+
+        let usage = usage_data
+            .first()
+            .expect("Expected at least one usage entry");
+        assert_eq!(usage.base.duration, 5);
+        assert!((usage.base.spot_per_kwh - 6.12_f64).abs() < f64::EPSILON);
+        assert!((usage.base.per_kwh - 24.33_f64).abs() < f64::EPSILON);
+        assert_eq!(usage.base.date.to_string(), "2021-05-05");
+        assert!((usage.base.renewables - 45.0_f64).abs() < f64::EPSILON);
+        assert_eq!(usage.base.channel_type, ChannelType::General);
+        assert_eq!(usage.base.spike_status, SpikeStatus::None);
+        assert_eq!(usage.base.descriptor, PriceDescriptor::Negative);
+        assert_eq!(usage.channel_identifier, "E1");
+        assert!((usage.kwh - 0.0_f64).abs() < f64::EPSILON);
+        assert_eq!(usage.quality, UsageQuality::Estimated);
+        assert!((usage.cost - 0.0_f64).abs() < f64::EPSILON);
+
+        Ok(())
+    }
+
+    // Test individual components with edge cases
+    #[test]
+    fn channel_types_deserialisation() -> Result<()> {
+        // Test all channel types
+        let general_json = r#"{"identifier": "E1", "type": "general", "tariff": "A100"}"#;
+        let controlled_json = r#"{"identifier": "E2", "type": "controlledLoad", "tariff": "A200"}"#;
+        let feedin_json = r#"{"identifier": "E3", "type": "feedIn", "tariff": "A300"}"#;
+
+        let general: Channel = serde_json::from_str(general_json)?;
+        let controlled: Channel = serde_json::from_str(controlled_json)?;
+        let feedin: Channel = serde_json::from_str(feedin_json)?;
+
+        assert_eq!(general.channel_type, ChannelType::General);
+        assert_eq!(controlled.channel_type, ChannelType::ControlledLoad);
+        assert_eq!(feedin.channel_type, ChannelType::FeedIn);
+
+        Ok(())
+    }
+
+    #[test]
+    fn site_status_deserialisation() -> Result<()> {
+        #[derive(Deserialize)]
+        struct TestSiteStatus {
+            status: SiteStatus,
+        }
+
+        // Test all site statuses
+        let pending_json = r#"{"status": "pending"}"#;
+        let active_json = r#"{"status": "active"}"#;
+        let closed_json = r#"{"status": "closed"}"#;
+
+        let pending: TestSiteStatus = serde_json::from_str(pending_json)?;
+        let active: TestSiteStatus = serde_json::from_str(active_json)?;
+        let closed: TestSiteStatus = serde_json::from_str(closed_json)?;
+
+        assert_eq!(pending.status, SiteStatus::Pending);
+        assert_eq!(active.status, SiteStatus::Active);
+        assert_eq!(closed.status, SiteStatus::Closed);
+
+        Ok(())
+    }
+
+    #[test]
+    fn range_and_advanced_price_deserialisation() -> Result<()> {
+        let range_json = r#"{"min": 0, "max": 100}"#;
+        let advanced_price_json = r#"{"low": 1, "predicted": 3, "high": 10}"#;
+
+        let range: Range = serde_json::from_str(range_json)?;
+        let advanced_price: AdvancedPrice = serde_json::from_str(advanced_price_json)?;
+
+        assert!((range.min - 0.0_f64).abs() < f64::EPSILON);
+        assert!((range.max - 100.0_f64).abs() < f64::EPSILON);
+        assert!((advanced_price.low - 1.0_f64).abs() < f64::EPSILON);
+        assert!((advanced_price.predicted - 3.0_f64).abs() < f64::EPSILON);
+        assert!((advanced_price.high - 10.0_f64).abs() < f64::EPSILON);
+
+        Ok(())
+    }
+
+    #[test]
+    fn usage_quality_deserialisation() -> Result<()> {
+        #[derive(Deserialize)]
+        struct TestUsageQuality {
+            quality: UsageQuality,
+        }
+
+        let estimated_json = r#"{"quality": "estimated"}"#;
+        let billable_json = r#"{"quality": "billable"}"#;
+
+        let estimated: TestUsageQuality = serde_json::from_str(estimated_json)?;
+        let billable: TestUsageQuality = serde_json::from_str(billable_json)?;
+
+        assert_eq!(estimated.quality, UsageQuality::Estimated);
+        assert_eq!(billable.quality, UsageQuality::Billable);
+
+        Ok(())
+    }
 }
