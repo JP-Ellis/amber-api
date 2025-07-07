@@ -256,6 +256,7 @@ jobs:
         shell: bash
         env:
           NEXTEST_EXPERIMENTAL_LIBTEST_JSON: '1'
+          AMBER_API_KEY: ${{ secrets.AMBER_API_KEY }}
         run: |-
           while IFS=$'\n' read -r line || ! retval=$line; do
             if ! echo "$line" | jq -e . 2>/dev/null 1>&2; then
