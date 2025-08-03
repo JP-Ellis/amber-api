@@ -128,17 +128,12 @@ let client = Amber::builder()
 
 ## Examples
 
-Check out the [examples directory](./examples/) for comprehensive usage examples:
+Check out the [examples directory](./examples/) for comprehensive usage examples. You can run them directly using Cargo and they will demonstrate various API features.
 
--   **[`get_sites`](./examples/get_sites.rs)**: Retrieve all electricity sites linked to your account
--   **[`renewables`](./examples/renewables.rs)**: Get current renewable energy percentage with default resolution
--   **[`renewables_with_resolution`](./examples/renewables_with_resolution.rs)**: Fetch renewable data with custom time resolution
--   **[`renewables_complete`](./examples/renewables_complete.rs)**: Comprehensive renewable energy data retrieval
-
-Run any example with:
+Most of the examples require that the `AMBER_API_KEY` environment be set, with the exception of the renewables:
 
 ```bash
-cargo run --example get_sites
+cargo run --example renewables
 ```
 
 ## API Coverage
