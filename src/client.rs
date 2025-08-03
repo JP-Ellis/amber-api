@@ -86,8 +86,7 @@ impl Amber {
     /// # Errors
     ///
     /// This method will return an error if:
-    /// - The state parameter is invalid (HTTP 400)
-    /// - The state is not found (HTTP 404)
+    ///
     /// - There's a network error communicating with the API
     /// - The API returns an internal server error (HTTP 500)
     ///
@@ -109,10 +108,10 @@ impl Amber {
     ///     println!("{}", renewable);
     /// }
     ///
-    /// // Get current data with 24 forecast intervals
+    /// // Get current data with 8 forecast intervals
     /// let renewables_with_forecast = client.current_renewables()
     ///     .state(State::Nsw)
-    ///     .next(24)
+    ///     .next(8)
     ///     .resolution(Resolution::FiveMinute)
     ///     .call()?;
     /// # Ok(())
@@ -159,6 +158,7 @@ impl Amber {
     /// # Errors
     ///
     /// This method will return an error if:
+    ///
     /// - The API key is missing or invalid (HTTP 401)
     /// - There's a network error communicating with the API
     /// - The API returns an internal server error (HTTP 500)
@@ -211,6 +211,7 @@ impl Amber {
     /// # Errors
     ///
     /// This method will return an error if:
+    ///
     /// - The API key is missing or invalid (HTTP 401)
     /// - The site ID is invalid (HTTP 400)
     /// - The site is not found (HTTP 404)
@@ -308,6 +309,7 @@ impl Amber {
     /// # Errors
     ///
     /// This method will return an error if:
+    ///
     /// - The API key is missing or invalid (HTTP 401)
     /// - The site ID is invalid (HTTP 400)
     /// - The site is not found (HTTP 404)
@@ -334,15 +336,15 @@ impl Amber {
     /// // Get current prices with forecast
     /// let prices_with_forecast = client.current_prices()
     ///     .site_id(site_id)
-    ///     .next(48)
+    ///     .next(8)
     ///     .resolution(Resolution::ThirtyMinute)
     ///     .call()?;
     ///
     /// // Get current prices with history and forecast
     /// let full_prices = client.current_prices()
     ///     .site_id(site_id)
-    ///     .previous(24)
-    ///     .next(24)
+    ///     .previous(8)
+    ///     .next(8)
     ///     .call()?;
     ///
     /// for interval in current_prices {
@@ -408,6 +410,7 @@ impl Amber {
     /// # Errors
     ///
     /// This method will return an error if:
+    ///
     /// - The API key is missing or invalid (HTTP 401)
     /// - The site ID is invalid (HTTP 400)
     /// - The site is not found (HTTP 404)
