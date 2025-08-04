@@ -688,6 +688,85 @@ pub enum Interval {
     CurrentInterval(CurrentInterval),
 }
 
+impl Interval {
+    /// Returns `true` if the interval is [`ActualInterval`].
+    ///
+    /// [`ActualInterval`]: Interval::ActualInterval
+    #[must_use]
+    #[inline]
+    pub fn is_actual_interval(&self) -> bool {
+        matches!(self, Self::ActualInterval(..))
+    }
+
+    /// Returns `true` if the interval is [`ForecastInterval`].
+    ///
+    /// [`ForecastInterval`]: Interval::ForecastInterval
+    #[must_use]
+    #[inline]
+    pub fn is_forecast_interval(&self) -> bool {
+        matches!(self, Self::ForecastInterval(..))
+    }
+
+    /// Returns `true` if the interval is [`CurrentInterval`].
+    ///
+    /// [`CurrentInterval`]: Interval::CurrentInterval
+    #[inline]
+    #[must_use]
+    pub fn is_current_interval(&self) -> bool {
+        matches!(self, Self::CurrentInterval(..))
+    }
+
+    /// Return a reference to the [`ActualInterval`] variant if it exists.
+    ///
+    /// [`ActualInterval`]: Interval::ActualInterval
+    #[inline]
+    #[must_use]
+    pub fn as_actual_interval(&self) -> Option<&ActualInterval> {
+        if let Self::ActualInterval(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    /// Return a reference to the [`ForecastInterval`] variant if it exists.
+    ///
+    /// [`ForecastInterval`]: Interval::ForecastInterval
+    #[inline]
+    #[must_use]
+    pub fn as_forecast_interval(&self) -> Option<&ForecastInterval> {
+        if let Self::ForecastInterval(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    /// Return a reference to the [`CurrentInterval`] variant if it exists.
+    ///
+    /// [`CurrentInterval`]: Interval::CurrentInterval
+    #[inline]
+    #[must_use]
+    pub fn as_current_interval(&self) -> Option<&CurrentInterval> {
+        if let Self::CurrentInterval(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    /// Returns the base interval if it exists.
+    #[inline]
+    #[must_use]
+    pub fn as_base_interval(&self) -> Option<&BaseInterval> {
+        match self {
+            Interval::ActualInterval(actual) => Some(&actual.base),
+            Interval::ForecastInterval(forecast) => Some(&forecast.base),
+            Interval::CurrentInterval(current) => Some(&current.base),
+        }
+    }
+}
+
 impl fmt::Display for Interval {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -851,6 +930,85 @@ pub enum Renewable {
     ForecastRenewable(ForecastRenewable),
     /// Current renewable data with real-time values
     CurrentRenewable(CurrentRenewable),
+}
+
+impl Renewable {
+    /// Returns `true` if the renewable is [`ActualRenewable`].
+    ///
+    /// [`ActualRenewable`]: Renewable::ActualRenewable
+    #[must_use]
+    #[inline]
+    pub fn is_actual_renewable(&self) -> bool {
+        matches!(self, Self::ActualRenewable(..))
+    }
+
+    /// Returns `true` if the renewable is [`ForecastRenewable`].
+    ///
+    /// [`ForecastRenewable`]: Renewable::ForecastRenewable
+    #[must_use]
+    #[inline]
+    pub fn is_forecast_renewable(&self) -> bool {
+        matches!(self, Self::ForecastRenewable(..))
+    }
+
+    /// Returns `true` if the renewable is [`CurrentRenewable`].
+    ///
+    /// [`CurrentRenewable`]: Renewable::CurrentRenewable
+    #[must_use]
+    #[inline]
+    pub fn is_current_renewable(&self) -> bool {
+        matches!(self, Self::CurrentRenewable(..))
+    }
+
+    /// Return a reference to the [`ActualRenewable`] variant if it exists.
+    ///
+    /// [`ActualRenewable`]: Renewable::ActualRenewable
+    #[must_use]
+    #[inline]
+    pub fn as_actual_renewable(&self) -> Option<&ActualRenewable> {
+        if let Self::ActualRenewable(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    /// Return a reference to the [`ForecastRenewable`] variant if it exists.
+    ///
+    /// [`ForecastRenewable`]: Renewable::ForecastRenewable
+    #[must_use]
+    #[inline]
+    pub fn as_forecast_renewable(&self) -> Option<&ForecastRenewable> {
+        if let Self::ForecastRenewable(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    /// Return a reference to the [`CurrentRenewable`] variant if it exists.
+    ///
+    /// [`CurrentRenewable`]: Renewable::CurrentRenewable
+    #[must_use]
+    #[inline]
+    pub fn as_current_renewable(&self) -> Option<&CurrentRenewable> {
+        if let Self::CurrentRenewable(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    /// Returns the base renewable data
+    #[must_use]
+    #[inline]
+    pub fn as_base_renewable(&self) -> &BaseRenewable {
+        match self {
+            Self::ActualRenewable(actual) => &actual.base,
+            Self::ForecastRenewable(forecast) => &forecast.base,
+            Self::CurrentRenewable(current) => &current.base,
+        }
+    }
 }
 
 impl fmt::Display for Renewable {
