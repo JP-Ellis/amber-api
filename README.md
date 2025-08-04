@@ -2,7 +2,12 @@
 
 <!-- markdownlint-disable no-inline-html -->
 <div align="center">
-    <b>A Rust client library for the Amber Electric API, providing easy access to renewable energy data, pricing information, and site management.</b>
+    <img src="logo.svg" alt="Amber API Logo" height="200" align="left" hspace="20">
+    <span>
+        <b>
+            A Rust client library for the Amber Electric API, providing easy access to renewable energy data and pricing information.
+        </b>
+    </span>
 </div>
 
 <div align="center"><table>
@@ -65,22 +70,13 @@
     </tr>
 </table></div>
 
-## Features
-
--   🔋 **Site Management**: Retrieve and manage your electricity sites
--   🌱 **Renewable Energy Data**: Access current and historical renewable energy percentages
--   📊 **Pricing Information**: Get real-time and forecast pricing data
--   ⚡ **Type-safe**: Fully typed API responses with serde support
--   🦀 **Async Ready**: Built on modern Rust async foundations
--   🔐 **Secure**: Built-in API key authentication
-
 ## Installation
 
 Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-amber-api = "1.0.0"
+amber-api = "~1"
 ```
 
 ## Quick Start
@@ -90,7 +86,7 @@ use amber_api::Amber;
 
 // Create a client with your API key
 let client = Amber::builder()
-    .api_key("your-api-key-here")
+    .api_key("your-api-key-here") // Prefer setting AMBER_API_KEY in an environment variable
     .build()?;
 
 // Get all your electricity sites
