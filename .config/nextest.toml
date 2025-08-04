@@ -4,7 +4,7 @@
 fail-fast = false
 
 # Some tests are flaky in CI
-retries = 3
+retries = { backoff = "exponential", count = 5, delay = "10s", jitter = true }
 
 # Test is slow if it takes longer than 10 seconds and then terminated if 6x10
 # seconds elapse
