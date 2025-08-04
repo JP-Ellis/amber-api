@@ -30,6 +30,10 @@ serde = { version = "~1", default-features = false, features = [
   "derive",
 ] }
 thiserror = "~2"
+tracing = { version = "0.1.41", default-features = false, features = [
+  "attributes",
+  "log",
+] }
 ureq = { version = "~3", default-features = false, features = [
   "json",
   "rustls",

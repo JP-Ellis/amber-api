@@ -4,6 +4,7 @@
 
 use crate::{error::Result, models};
 use serde::de::DeserializeOwned;
+use tracing::{debug, instrument};
 
 /// The base URL for the Amber Electric API
 const API_BASE_URL: &str = "https://api.amber.com.au/v1/";
@@ -29,6 +30,7 @@ impl Default for Amber {
     /// in the `AMBER_API_KEY` environment variable.
     #[inline]
     fn default() -> Self {
+        debug!("Creating default Amber API client");
         Self {
             agent: ureq::agent(),
             api_key: std::env::var("AMBER_API_KEY")
@@ -42,23 +44,28 @@ impl Default for Amber {
 #[bon::bon]
 impl Amber {
     /// Perform a GET request to the Amber API.
+    #[instrument(skip(self, query), level = "debug")]
     fn get<T: DeserializeOwned, I, K, V>(&self, path: &str, query: I) -> Result<T>
     where
         I: IntoIterator<Item = (K, V)>,
         K: AsRef<str>,
         V: AsRef<str>,
     {
-        let mut request = self.agent.get(&format!("{}{}", self.base_url, path));
+        let endpoint = format!("{}{}", self.base_url, path);
+        debug!("GET {endpoint}");
 
+        let mut request = self.agent.get(&endpoint);
         if let Some(api_key) = &self.api_key {
             request = request.header("Authorization", &format!("Bearer {api_key}"));
         }
 
         for (key, value) in query {
+            debug!("Query parameter: {}={}", key.as_ref(), value.as_ref());
             request = request.query(key.as_ref(), value.as_ref());
         }
 
         let mut response = request.call()?;
+        debug!("Status code: {}", response.status());
         Ok(response.body_mut().read_json()?)
     }
 
