@@ -213,6 +213,8 @@ jobs:
           tool: cargo-tarpaulin
 
       - name: Run cargo tarpaulin
+        env:
+          AMBER_API_KEY: ${{ secrets.AMBER_API_KEY }}
         run: cargo tarpaulin --out Xml
 
       - name: Upload Rust coverage artifact
