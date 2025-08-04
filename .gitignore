@@ -397,3 +397,5 @@ Temporary Items
 ## ignored, it can be explicitly unignored by adding it here with a prefix `!`.
 ## This has to be placed at the end of the file as the last rule takes
 ## precedence.
+
+!/logo.svg
