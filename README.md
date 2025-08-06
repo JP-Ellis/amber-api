@@ -69,6 +69,7 @@
         </td>
     </tr>
 </table></div>
+<!-- markdownlint-enable no-inline-html -->
 
 ## Installation
 
