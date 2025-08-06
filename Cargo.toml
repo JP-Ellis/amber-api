@@ -7,7 +7,7 @@ license     = "MIT"
 readme      = "README.md"
 version     = "1.0.0"
 
-categories = ["API bindings"]
+categories = ["api-bindings"]
 keywords   = ["amber", "amber-electric", "api"]
 
 authors    = ["JP-Ellis <josh@jpellis.me>"]
