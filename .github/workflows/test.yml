@@ -243,7 +243,9 @@ jobs:
           - macos-latest
         rust:
           - stable
-          - beta
+        include:
+          - os: ubuntu-latest
+            rust: beta
     continue-on-error: ${{ matrix.rust != 'stable' }}
 
     steps:
