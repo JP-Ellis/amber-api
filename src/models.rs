@@ -1230,6 +1230,7 @@ mod tests {
     // Test Interval deserialization (prices endpoint)
     #[test]
     #[expect(
+        clippy::cognitive_complexity,
         clippy::too_many_lines,
         reason = "Comprehensive test for all interval types"
     )]

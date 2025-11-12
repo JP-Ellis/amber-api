@@ -45,6 +45,10 @@ impl Default for Amber {
 impl Amber {
     /// Perform a GET request to the Amber API.
     #[instrument(skip(self, query), level = "debug")]
+    #[expect(
+        clippy::cognitive_complexity,
+        reason = "False positive due to macro expansions"
+    )]
     fn get<T: DeserializeOwned, I, K, V>(&self, path: &str, query: I) -> Result<T>
     where
         I: IntoIterator<Item = (K, V)>,
