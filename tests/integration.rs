@@ -244,9 +244,9 @@ fn current_prices_optional(amber_client: Amber, site_id: String) -> Result<()> {
 /// Test the `usage()` method to ensure it works with required arguments.
 #[rstest]
 fn usage_default(amber_client: Amber, site_id: String) -> Result<()> {
-    let start_date = jiff::civil::Date::new(2025, 8, 1)
+    let start_date = jiff::civil::Date::new(2025, 11, 1)
         .map_err(|e| anyhow!("Failed to create start date: {e}"))?;
-    let end_date = jiff::civil::Date::new(2025, 8, 1)
+    let end_date = jiff::civil::Date::new(2025, 11, 1)
         .map_err(|e| anyhow!("Failed to create end date: {e}"))?;
 
     let usage_data = amber_client
@@ -277,9 +277,9 @@ fn usage_default(amber_client: Amber, site_id: String) -> Result<()> {
 /// Test the `usage()` method with a multi-day date range.
 #[rstest]
 fn usage_multi_day(amber_client: Amber, site_id: String) -> Result<()> {
-    let start_date = jiff::civil::Date::new(2025, 8, 1)
+    let start_date = jiff::civil::Date::new(2025, 11, 1)
         .map_err(|e| anyhow!("Failed to create start date: {e}"))?;
-    let end_date = jiff::civil::Date::new(2025, 8, 3)
+    let end_date = jiff::civil::Date::new(2025, 11, 3)
         .map_err(|e| anyhow!("Failed to create end date: {e}"))?;
 
     let usage_data = amber_client
