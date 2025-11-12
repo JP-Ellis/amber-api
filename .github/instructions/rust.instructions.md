@@ -101,7 +101,7 @@ Eagerly implement common traits where appropriate:
 -   Ensure all public items have rustdoc comments, often including examples (unless trivial). This includes functions, traits, structs, enums, and modules
 -   Follow the [API Guidelines](https://rust-lang.github.io/api-guidelines/)
 -   Document error conditions, panic scenarios, and safety considerations
--   All function must follow the following docstring format:
+-   All functions must follow the following docstring format:
 
     ````rust
     /// Brief description of the function.
