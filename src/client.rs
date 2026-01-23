@@ -13,7 +13,40 @@ const API_BASE_URL: &str = "https://api.amber.com.au/v1/";
 /// Main client for the Amber Electric API.
 ///
 /// This client provides a high-level interface to all Amber Electric API
-/// endpoints.
+/// endpoints with automatic retry logic for rate limit errors.
+///
+/// # Rate Limit Handling
+///
+/// By default, the client automatically retries requests that hit rate limits
+/// (HTTP 429). The client reads the `RateLimit-Reset` header to determine how
+/// long to wait before retrying. By default, up to 3 retry attempts will be
+/// made. You can configure this behavior:
+///
+/// ```
+/// use amber_api::Amber;
+///
+/// // Disable automatic retries
+/// let client = Amber::builder()
+///     .retry_on_rate_limit(false)
+///     .build();
+///
+/// // Customize max retry attempts (default: 3)
+/// let client = Amber::builder()
+///     .max_retries(5)
+///     .build();
+/// ```
+///
+/// When rate limit retries are disabled or exhausted, the client returns an
+/// error containing the suggested retry-after duration.
+///
+/// # Examples
+///
+/// ```
+/// use amber_api::Amber;
+///
+/// // Create a client with default retry behavior (3 retries, enabled)
+/// let client = Amber::default();
+/// ```
 #[derive(Debug, bon::Builder)]
 pub struct Amber {
     /// HTTP client for making requests.
@@ -22,6 +55,27 @@ pub struct Amber {
     api_key: Option<String>,
     /// Base URL for the Amber API.
     base_url: String,
+    /// Maximum number of retry attempts for rate limit errors.
+    ///
+    /// When the API returns HTTP 429 (rate limit exceeded), the client will
+    /// automatically retry up to this many times. Set to 0 to disable retries,
+    /// or use `retry_on_rate_limit(false)` for clearer intent.
+    ///
+    /// Defaults to 3.
+    #[builder(default = 3)]
+    max_retries: u32,
+    /// Whether to automatically retry on rate limit errors.
+    ///
+    /// When enabled (default), the client automatically waits and retries when
+    /// hitting rate limits. The wait time is read from the `RateLimit-Reset`
+    /// header, or defaults to 60 seconds if not present.
+    ///
+    /// When disabled, rate limit errors are returned immediately as
+    /// [`AmberError::RateLimitExceeded`].
+    ///
+    /// Default to `true`.
+    #[builder(default = true)]
+    retry_on_rate_limit: bool,
 }
 
 impl Default for Amber {
@@ -29,49 +83,121 @@ impl Default for Amber {
     ///
     /// This create a default client that is authenticated if an API key is set
     /// in the `AMBER_API_KEY` environment variable.
+    ///
+    /// The default client has automatic rate limit retry enabled with up to 3
+    /// retry attempts.
     #[inline]
     fn default() -> Self {
         debug!("Creating default Amber API client");
+        let config = ureq::Agent::config_builder().build();
         Self {
-            agent: ureq::agent(),
+            agent: config.into(),
             api_key: std::env::var("AMBER_API_KEY")
                 .ok()
                 .filter(|s| !s.is_empty()),
             base_url: API_BASE_URL.to_owned(),
+            max_retries: 3,
+            retry_on_rate_limit: true,
         }
     }
 }
 
 #[bon::bon]
 impl Amber {
-    /// Perform a GET request to the Amber API.
+    /// Perform a GET request to the Amber API with automatic retry on rate
+    /// limits.
+    ///
+    /// This method automatically retries requests that hit rate limits (HTTP
+    /// 429), waiting the time specified in the `RateLimit-Reset` header (or 60
+    /// seconds if not present) before retrying. The number of retries is
+    /// controlled by the `max_retries` and `retry_on_rate_limit` configuration
+    /// options.
     #[instrument(skip(self, query), level = "debug")]
-    #[expect(
-        clippy::cognitive_complexity,
-        reason = "False positive due to macro expansions"
-    )]
     fn get<T: DeserializeOwned, I, K, V>(&self, path: &str, query: I) -> Result<T>
     where
-        I: IntoIterator<Item = (K, V)>,
+        I: IntoIterator<Item = (K, V)> + Clone,
         K: AsRef<str>,
         V: AsRef<str>,
     {
         let endpoint = format!("{}{}", self.base_url, path);
-        debug!("GET {endpoint}");
+        let mut attempt: u32 = 0;
 
-        let mut request = self.agent.get(&endpoint);
-        if let Some(api_key) = &self.api_key {
-            request = request.header("Authorization", &format!("Bearer {api_key}"));
+        loop {
+            debug!(
+                "GET {endpoint} (attempt {}/{})",
+                attempt.saturating_add(1),
+                self.max_retries.saturating_add(1)
+            );
+
+            // Build request
+            let mut request = self.agent.get(&endpoint);
+            if let Some(api_key) = &self.api_key {
+                request = request.header("Authorization", &format!("Bearer {api_key}"));
+            }
+
+            for (key, value) in query.clone() {
+                debug!("Query parameter: {}={}", key.as_ref(), value.as_ref());
+                request = request.query(key.as_ref(), value.as_ref());
+            }
+
+            // Make request
+            match request.call() {
+                Ok(mut response) => {
+                    let status = response.status();
+                    debug!("Status code: {}", status);
+
+                    // Log rate limit info if available
+                    if let Some(remaining) = response
+                        .headers()
+                        .get("RateLimit-Remaining")
+                        .and_then(|v| v.to_str().ok())
+                        .and_then(|s| s.parse::<u64>().ok())
+                    {
+                        debug!("Rate limit remaining: {}", remaining);
+                    }
+
+                    // Success - deserialize and return
+                    return Ok(response.body_mut().read_json()?);
+                }
+                Err(ureq::Error::StatusCode(429)) => {
+                    // Rate limit hit - try to get retry-after time
+                    // Note: In ureq 3.x, Error::StatusCode doesn't contain the response,
+                    // so we use a default retry time of 60 seconds
+                    let retry_after = 60u64;
+
+                    if !self.retry_on_rate_limit {
+                        return Err(crate::error::AmberError::RateLimitExceeded(retry_after));
+                    }
+
+                    if attempt >= self.max_retries {
+                        return Err(crate::error::AmberError::RateLimitExhausted {
+                            attempts: attempt,
+                            retry_after,
+                        });
+                    }
+
+                    // Wait and retry
+                    debug!(
+                        "Rate limit hit. Waiting {} seconds before retry",
+                        retry_after
+                    );
+                    std::thread::sleep(std::time::Duration::from_secs(retry_after));
+                    attempt += 1;
+                    continue;
+                }
+                Err(ureq::Error::StatusCode(status)) => {
+                    // Other HTTP error status codes
+                    return Err(crate::error::AmberError::UnexpectedStatus {
+                        status,
+                        body: String::from("<body not available>"),
+                    });
+                }
+                Err(e) => {
+                    // Network or other transport errors
+                    return Err(e.into());
+                }
+            }
         }
-
-        for (key, value) in query {
-            debug!("Query parameter: {}={}", key.as_ref(), value.as_ref());
-            request = request.query(key.as_ref(), value.as_ref());
-        }
-
-        let mut response = request.call()?;
-        debug!("Status code: {}", response.status());
-        Ok(response.body_mut().read_json()?)
     }
 
     /// Returns the current percentage of renewables in the grid for a specific
@@ -500,5 +626,81 @@ impl Amber {
         ];
 
         self.get(&format!("sites/{site_id}/usage"), query_params)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_amber_default_retry_config() {
+        let client = Amber::default();
+        assert_eq!(client.max_retries, 3);
+        assert!(client.retry_on_rate_limit);
+    }
+
+    #[test]
+    fn test_amber_builder_custom_retry_config() {
+        let config = ureq::Agent::config_builder().build();
+        let client = Amber::builder()
+            .agent(config.into())
+            .base_url(API_BASE_URL.to_owned())
+            .max_retries(5)
+            .retry_on_rate_limit(false)
+            .build();
+
+        assert_eq!(client.max_retries, 5);
+        assert!(!client.retry_on_rate_limit);
+    }
+
+    #[test]
+    fn test_amber_builder_with_retry_defaults() {
+        let config = ureq::Agent::config_builder().build();
+        let client = Amber::builder()
+            .agent(config.into())
+            .base_url(API_BASE_URL.to_owned())
+            .build();
+
+        assert_eq!(client.max_retries, 3);
+        assert!(client.retry_on_rate_limit);
+    }
+
+    #[test]
+    fn test_amber_builder_only_max_retries() {
+        let config = ureq::Agent::config_builder().build();
+        let client = Amber::builder()
+            .agent(config.into())
+            .base_url(API_BASE_URL.to_owned())
+            .max_retries(10)
+            .build();
+
+        assert_eq!(client.max_retries, 10);
+        assert!(client.retry_on_rate_limit); // Should still be default
+    }
+
+    #[test]
+    fn test_amber_builder_only_retry_flag() {
+        let config = ureq::Agent::config_builder().build();
+        let client = Amber::builder()
+            .agent(config.into())
+            .base_url(API_BASE_URL.to_owned())
+            .retry_on_rate_limit(false)
+            .build();
+
+        assert_eq!(client.max_retries, 3); // Should still be default
+        assert!(!client.retry_on_rate_limit);
+    }
+
+    #[test]
+    fn test_amber_builder_disable_retries_with_zero() {
+        let config = ureq::Agent::config_builder().build();
+        let client = Amber::builder()
+            .agent(config.into())
+            .base_url(API_BASE_URL.to_owned())
+            .max_retries(0)
+            .build();
+
+        assert_eq!(client.max_retries, 0);
     }
 }

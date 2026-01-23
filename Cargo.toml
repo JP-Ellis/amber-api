@@ -81,6 +81,7 @@ serde_json        = "=1.0.149"
   blanket-clippy-restriction-lints = "allow"
 
   arbitrary_source_item_ordering = "allow"
+  cognitive_complexity           = "allow"
   else_if_without_else           = "allow"
   impl_trait_in_params           = "allow"
   implicit_return                = "allow"
