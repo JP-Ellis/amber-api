@@ -24,9 +24,10 @@
 
 use anyhow::{Result, bail};
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let client = amber_api::Amber::default();
-    let sites = client.sites()?;
+    let sites = client.sites().await?;
 
     match sites.len() {
         0 => {

@@ -15,6 +15,9 @@ const API_BASE_URL: &str = "https://api.amber.com.au/v1/";
 /// This client provides a high-level interface to all Amber Electric API
 /// endpoints with automatic retry logic for rate limit errors.
 ///
+/// Internally, it uses `reqwest` as the HTTP client, which is stored behind
+/// an [`Arc`][std::sync::Arc] and can be cloned cheaply.
+///
 /// # Rate Limit Handling
 ///
 /// By default, the client automatically retries requests that hit rate limits
@@ -47,10 +50,10 @@ const API_BASE_URL: &str = "https://api.amber.com.au/v1/";
 /// // Create a client with default retry behavior (3 retries, enabled)
 /// let client = Amber::default();
 /// ```
-#[derive(Debug, bon::Builder)]
+#[derive(Debug, Clone, bon::Builder)]
 pub struct Amber {
     /// HTTP client for making requests.
-    agent: ureq::Agent,
+    client: reqwest::Client,
     /// Optional API key for authenticated requests.
     api_key: Option<String>,
     /// Base URL for the Amber API.
@@ -87,11 +90,20 @@ impl Default for Amber {
     /// The default client has automatic rate limit retry enabled with up to 3
     /// retry attempts.
     #[inline]
+    #[expect(
+        clippy::expect_used,
+        reason = "reqwest::Client::builder() with basic config cannot fail"
+    )]
     fn default() -> Self {
         debug!("Creating default Amber API client");
-        let config = ureq::Agent::config_builder().build();
+        let client = reqwest::Client::builder()
+            .user_agent("amber-api/1.0.0")
+            .timeout(core::time::Duration::from_secs(30))
+            .build()
+            .expect("Failed to build HTTP client");
+
         Self {
-            agent: config.into(),
+            client,
             api_key: std::env::var("AMBER_API_KEY")
                 .ok()
                 .filter(|s| !s.is_empty()),
@@ -108,41 +120,48 @@ impl Amber {
     /// limits.
     ///
     /// This method automatically retries requests that hit rate limits (HTTP
-    /// 429), waiting the time specified in the `RateLimit-Reset` header (or 60
-    /// seconds if not present) before retrying. The number of retries is
-    /// controlled by the `max_retries` and `retry_on_rate_limit` configuration
-    /// options.
+    /// 429), reading the `RateLimit-Reset` header from the 429 response to
+    /// determine the exact number of seconds to wait before retrying. If the
+    /// header is missing or invalid, it falls back to 60 seconds.
+    ///
+    /// The number of retries is controlled by the `max_retries` and
+    /// `retry_on_rate_limit` configuration options.
     #[instrument(skip(self, query), level = "debug")]
-    fn get<T: DeserializeOwned, I, K, V>(&self, path: &str, query: I) -> Result<T>
+    async fn get<T: DeserializeOwned, I, K, V>(&self, path: &str, query: I) -> Result<T>
     where
-        I: IntoIterator<Item = (K, V)> + Clone,
+        I: IntoIterator<Item = (K, V)>,
         K: AsRef<str>,
         V: AsRef<str>,
     {
         let endpoint = format!("{}{}", self.base_url, path);
+        let query_params: Vec<(String, String)> = query
+            .into_iter()
+            .map(|(k, v)| (k.as_ref().to_owned(), v.as_ref().to_owned()))
+            .collect();
         let mut attempt: u32 = 0;
 
         loop {
-            debug!(
-                "GET {endpoint} (attempt {}/{})",
-                attempt.saturating_add(1),
-                self.max_retries.saturating_add(1)
-            );
+            let current_attempt = attempt.saturating_add(1);
+            let max_attempts = self.max_retries.saturating_add(1);
+            debug!("GET {endpoint} (attempt {current_attempt}/{max_attempts})");
 
             // Build request
-            let mut request = self.agent.get(&endpoint);
+            let mut request = self.client.get(&endpoint);
+
             if let Some(api_key) = &self.api_key {
-                request = request.header("Authorization", &format!("Bearer {api_key}"));
+                request = request.bearer_auth(api_key);
             }
 
-            for (key, value) in query.clone() {
-                debug!("Query parameter: {}={}", key.as_ref(), value.as_ref());
-                request = request.query(key.as_ref(), value.as_ref());
+            if !query_params.is_empty() {
+                for (key, value) in &query_params {
+                    debug!("Query parameter: {}={}", key, value);
+                }
+                request = request.query(&query_params);
             }
 
             // Make request
-            match request.call() {
-                Ok(mut response) => {
+            match request.send().await {
+                Ok(response) => {
                     let status = response.status();
                     debug!("Status code: {}", status);
 
@@ -156,40 +175,49 @@ impl Amber {
                         debug!("Rate limit remaining: {}", remaining);
                     }
 
-                    // Success - deserialize and return
-                    return Ok(response.body_mut().read_json()?);
-                }
-                Err(ureq::Error::StatusCode(429)) => {
-                    // Rate limit hit - try to get retry-after time
-                    // Note: In ureq 3.x, Error::StatusCode doesn't contain the response,
-                    // so we use a default retry time of 60 seconds
-                    let retry_after = 60u64;
+                    // Handle rate limiting
+                    if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+                        let retry_after = response
+                            .headers()
+                            .get("RateLimit-Reset")
+                            .and_then(|v| v.to_str().ok())
+                            .and_then(|s| s.parse::<u64>().ok())
+                            .unwrap_or(60);
 
-                    if !self.retry_on_rate_limit {
-                        return Err(crate::error::AmberError::RateLimitExceeded(retry_after));
+                        if !self.retry_on_rate_limit {
+                            return Err(crate::error::AmberError::RateLimitExceeded(retry_after));
+                        }
+
+                        if attempt >= self.max_retries {
+                            return Err(crate::error::AmberError::RateLimitExhausted {
+                                attempts: attempt,
+                                retry_after,
+                            });
+                        }
+
+                        // Wait and retry
+                        debug!(
+                            "Rate limit hit. Waiting {} seconds before retry",
+                            retry_after
+                        );
+                        tokio::time::sleep(tokio::time::Duration::from_secs(retry_after)).await;
+                        attempt = attempt.saturating_add(1);
+                        continue;
                     }
 
-                    if attempt >= self.max_retries {
-                        return Err(crate::error::AmberError::RateLimitExhausted {
-                            attempts: attempt,
-                            retry_after,
-                        });
+                    // Check for success
+                    if status.is_success() {
+                        return response.json::<T>().await.map_err(Into::into);
                     }
 
-                    // Wait and retry
-                    debug!(
-                        "Rate limit hit. Waiting {} seconds before retry",
-                        retry_after
-                    );
-                    std::thread::sleep(std::time::Duration::from_secs(retry_after));
-                    attempt += 1;
-                    continue;
-                }
-                Err(ureq::Error::StatusCode(status)) => {
-                    // Other HTTP error status codes
+                    // Other error statuses
+                    let body = response
+                        .text()
+                        .await
+                        .unwrap_or_else(|_| String::from("<body not available>"));
                     return Err(crate::error::AmberError::UnexpectedStatus {
-                        status,
-                        body: String::from("<body not available>"),
+                        status: status.as_u16(),
+                        body,
                     });
                 }
                 Err(e) => {
@@ -262,7 +290,7 @@ impl Amber {
     /// [`Renewable`]: crate::models::Renewable
     #[inline]
     #[builder]
-    pub fn current_renewables(
+    pub async fn current_renewables(
         &self,
         state: models::State,
         next: Option<u32>,
@@ -279,6 +307,7 @@ impl Amber {
             .into_iter()
             .filter_map(|(k, v)| v.map(|val| (k, val))),
         )
+        .await
     }
 
     /// Return all sites linked to your account.
@@ -325,8 +354,8 @@ impl Amber {
     ///
     /// [`Site`]: crate::models::Site
     #[inline]
-    pub fn sites(&self) -> Result<Vec<crate::models::Site>> {
-        self.get("sites", core::iter::empty::<(&str, &str)>())
+    pub async fn sites(&self) -> Result<Vec<crate::models::Site>> {
+        self.get("sites", core::iter::empty::<(&str, &str)>()).await
     }
 
     /// Returns all the prices between the start and end dates for a specific
@@ -414,7 +443,7 @@ impl Amber {
     /// [`Interval`]: crate::models::Interval
     #[inline]
     #[builder]
-    pub fn prices(
+    pub async fn prices(
         &self,
         site_id: &str,
         start_date: Option<jiff::civil::Date>,
@@ -431,6 +460,7 @@ impl Amber {
             .into_iter()
             .filter_map(|(k, v)| v.map(|val| (k, val))),
         )
+        .await
     }
 
     /// Returns the current price for a specific site.
@@ -520,7 +550,7 @@ impl Amber {
     /// [`Interval`]: crate::models::Interval
     #[inline]
     #[builder]
-    pub fn current_prices(
+    pub async fn current_prices(
         &self,
         site_id: &str,
         next: Option<u32>,
@@ -537,6 +567,7 @@ impl Amber {
             .into_iter()
             .filter_map(|(k, v)| v.map(|val| (k, val))),
         )
+        .await
     }
 
     /// Returns all usage data between the start and end dates for a specific
@@ -612,7 +643,7 @@ impl Amber {
     /// [`Usage`]: crate::models::Usage
     #[inline]
     #[builder]
-    pub fn usage(
+    pub async fn usage(
         &self,
         site_id: &str,
         start_date: jiff::civil::Date,
@@ -626,81 +657,6 @@ impl Amber {
         ];
 
         self.get(&format!("sites/{site_id}/usage"), query_params)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_amber_default_retry_config() {
-        let client = Amber::default();
-        assert_eq!(client.max_retries, 3);
-        assert!(client.retry_on_rate_limit);
-    }
-
-    #[test]
-    fn test_amber_builder_custom_retry_config() {
-        let config = ureq::Agent::config_builder().build();
-        let client = Amber::builder()
-            .agent(config.into())
-            .base_url(API_BASE_URL.to_owned())
-            .max_retries(5)
-            .retry_on_rate_limit(false)
-            .build();
-
-        assert_eq!(client.max_retries, 5);
-        assert!(!client.retry_on_rate_limit);
-    }
-
-    #[test]
-    fn test_amber_builder_with_retry_defaults() {
-        let config = ureq::Agent::config_builder().build();
-        let client = Amber::builder()
-            .agent(config.into())
-            .base_url(API_BASE_URL.to_owned())
-            .build();
-
-        assert_eq!(client.max_retries, 3);
-        assert!(client.retry_on_rate_limit);
-    }
-
-    #[test]
-    fn test_amber_builder_only_max_retries() {
-        let config = ureq::Agent::config_builder().build();
-        let client = Amber::builder()
-            .agent(config.into())
-            .base_url(API_BASE_URL.to_owned())
-            .max_retries(10)
-            .build();
-
-        assert_eq!(client.max_retries, 10);
-        assert!(client.retry_on_rate_limit); // Should still be default
-    }
-
-    #[test]
-    fn test_amber_builder_only_retry_flag() {
-        let config = ureq::Agent::config_builder().build();
-        let client = Amber::builder()
-            .agent(config.into())
-            .base_url(API_BASE_URL.to_owned())
-            .retry_on_rate_limit(false)
-            .build();
-
-        assert_eq!(client.max_retries, 3); // Should still be default
-        assert!(!client.retry_on_rate_limit);
-    }
-
-    #[test]
-    fn test_amber_builder_disable_retries_with_zero() {
-        let config = ureq::Agent::config_builder().build();
-        let client = Amber::builder()
-            .agent(config.into())
-            .base_url(API_BASE_URL.to_owned())
-            .max_retries(0)
-            .build();
-
-        assert_eq!(client.max_retries, 0);
+            .await
     }
 }

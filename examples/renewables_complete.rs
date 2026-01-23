@@ -19,7 +19,8 @@
 use amber_api::models;
 use anyhow::{Result, bail};
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let client = amber_api::Amber::default();
     let renewables = client
         .current_renewables()
@@ -27,7 +28,8 @@ fn main() -> Result<()> {
         .next(6)
         .previous(3)
         .resolution(models::Resolution::ThirtyMinute)
-        .call()?;
+        .call()
+        .await?;
 
     if renewables.len() == 10 {
         println!("✅ Found 10 renewable energy entries");
