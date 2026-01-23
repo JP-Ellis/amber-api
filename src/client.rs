@@ -97,7 +97,7 @@ impl Default for Amber {
     fn default() -> Self {
         debug!("Creating default Amber API client");
         let client = reqwest::Client::builder()
-            .user_agent("amber-api/1.0.0")
+            .user_agent(format!("amber-api/{}", env!("CARGO_PKG_VERSION")))
             .timeout(core::time::Duration::from_secs(30))
             .build()
             .expect("Failed to build HTTP client");
