@@ -1,25 +1,26 @@
 //! # Amber Electric API Client
 //!
-//! This module provides a client for interacting with the [Amber Electric Public API](https://api.amber.com.au/v1).
+//! This module provides a client for interacting with the [Amber Electric
+//! Public API](https://api.amber.com.au/v1).
 
 use crate::{error::Result, models};
 use serde::de::DeserializeOwned;
 use tracing::{debug, instrument};
 
-/// The base URL for the Amber Electric API
+/// The base URL for the Amber Electric API.
 const API_BASE_URL: &str = "https://api.amber.com.au/v1/";
 
-/// Main client for the Amber Electric API
+/// Main client for the Amber Electric API.
 ///
 /// This client provides a high-level interface to all Amber Electric API
 /// endpoints.
 #[derive(Debug, bon::Builder)]
 pub struct Amber {
-    /// HTTP client for making requests
+    /// HTTP client for making requests.
     agent: ureq::Agent,
-    /// Optional API key for authenticated requests
+    /// Optional API key for authenticated requests.
     api_key: Option<String>,
-    /// Base URL for the Amber API
+    /// Base URL for the Amber API.
     base_url: String,
 }
 
@@ -73,11 +74,12 @@ impl Amber {
         Ok(response.body_mut().read_json()?)
     }
 
-    /// Returns the current percentage of renewables in the grid for a specific state.
+    /// Returns the current percentage of renewables in the grid for a specific
+    /// state.
     ///
-    /// This method retrieves renewable energy data for the specified Australian state.
-    /// The data shows the current percentage of renewable energy in the grid and can
-    /// optionally include historical and forecast data.
+    /// This method retrieves renewable energy data for the specified Australian
+    /// state. The data shows the current percentage of renewable energy in the
+    /// grid and can optionally include historical and forecast data.
     ///
     /// # Parameters
     ///
@@ -88,11 +90,13 @@ impl Amber {
     ///
     /// # Authentication
     ///
-    /// This endpoint does not require authentication and can be called without an API key.
+    /// This endpoint does not require authentication and can be called without
+    /// an API key.
     ///
     /// # Returns
     ///
-    /// Returns a [`Result`] containing a [`Vec`] of [`Renewable`] objects on success.
+    /// Returns a [`Result`] containing a [`Vec`] of [`Renewable`] objects on
+    /// success.
     ///
     /// # Errors
     ///
@@ -153,18 +157,21 @@ impl Amber {
 
     /// Return all sites linked to your account.
     ///
-    /// This method returns information about all electricity sites associated with your
-    /// Amber account. Each site represents a location where you have electricity service.
+    /// This method returns information about all electricity sites associated
+    /// with your Amber account. Each site represents a location where you have
+    /// electricity service.
     ///
     /// # Authentication
     ///
-    /// This method requires authentication via API key. The API key can be provided
-    /// either through the `AMBER_API_KEY` environment variable (when using [`Amber::default()`])
-    /// or by explicitly setting it when building the client.
+    /// This method requires authentication via API key. The API key can be
+    /// provided either through the `AMBER_API_KEY` environment variable (when
+    /// using [`Amber::default()`]) or by explicitly setting it when building
+    /// the client.
     ///
     /// # Returns
     ///
-    /// Returns a [`Result`] containing a [`Vec`] of [`Site`] objects on success.
+    /// Returns a [`Result`] containing a [`Vec`] of [`Site`] objects on
+    /// success.
     ///
     /// # Errors
     ///
@@ -196,28 +203,34 @@ impl Amber {
         self.get("sites", core::iter::empty::<(&str, &str)>())
     }
 
-    /// Returns all the prices between the start and end dates for a specific site.
+    /// Returns all the prices between the start and end dates for a specific
+    /// site.
     ///
-    /// This method retrieves historical pricing data for the specified site between
-    /// the given date range. The date range cannot exceed 7 days.
+    /// This method retrieves historical pricing data for the specified site
+    /// between the given date range. The date range cannot exceed 7 days.
     ///
     /// # Parameters
     ///
-    /// - `site_id`: ID of the site you are fetching prices for (obtained from [`sites()`])
-    /// - `start_date`: Optional start date for the price range (defaults to today)
+    /// - `site_id`: ID of the site you are fetching prices for (obtained from
+    ///   [`sites()`])
+    /// - `start_date`: Optional start date for the price range (defaults to
+    ///   today)
     /// - `end_date`: Optional end date for the price range (defaults to today)
-    /// - `resolution`: Optional interval duration (5 or 30 minutes, defaults to your billing interval)
+    /// - `resolution`: Optional interval duration (5 or 30 minutes, defaults to
+    ///   your billing interval)
     ///
     /// # Authentication
     ///
-    /// This method requires authentication via API key. The API key can be provided
-    /// either through the `AMBER_API_KEY` environment variable (when using [`Amber::default()`])
-    /// or by explicitly setting it when building the client.
+    /// This method requires authentication via API key. The API key can be
+    /// provided either through the `AMBER_API_KEY` environment variable (when
+    /// using [`Amber::default()`]) or by explicitly setting it when building
+    /// the client.
     ///
     /// # Returns
     ///
-    /// Returns a [`Result`] containing a [`Vec`] of [`Interval`] objects on success.
-    /// Intervals are returned in order: General > Controlled Load > Feed In.
+    /// Returns a [`Result`] containing a [`Vec`] of [`Interval`] objects on
+    /// success. Intervals are returned in order: General > Controlled Load >
+    /// Feed In.
     ///
     /// # Errors
     ///
@@ -301,21 +314,27 @@ impl Amber {
     ///
     /// # Parameters
     ///
-    /// - `site_id`: ID of the site you are fetching prices for (obtained from [`sites()`])
-    /// - `next`: Optional number of forecast intervals to return (max 2048 total)
-    /// - `previous`: Optional number of historical intervals to return (max 2048 total)
-    /// - `resolution`: Optional interval duration (5 or 30 minutes, defaults to your billing interval)
+    /// - `site_id`: ID of the site you are fetching prices for (obtained from
+    ///   [`sites()`])
+    /// - `next`: Optional number of forecast intervals to return (max 2048
+    ///   total)
+    /// - `previous`: Optional number of historical intervals to return (max
+    ///   2048 total)
+    /// - `resolution`: Optional interval duration (5 or 30 minutes, defaults to
+    ///   your billing interval)
     ///
     /// # Authentication
     ///
-    /// This method requires authentication via API key. The API key can be provided
-    /// either through the `AMBER_API_KEY` environment variable (when using [`Amber::default()`])
-    /// or by explicitly setting it when building the client.
+    /// This method requires authentication via API key. The API key can be
+    /// provided either through the `AMBER_API_KEY` environment variable (when
+    /// using [`Amber::default()`]) or by explicitly setting it when building
+    /// the client.
     ///
     /// # Returns
     ///
-    /// Returns a [`Result`] containing a [`Vec`] of [`Interval`] objects on success.
-    /// Intervals are returned in order: General > Controlled Load > Feed In.
+    /// Returns a [`Result`] containing a [`Vec`] of [`Interval`] objects on
+    /// success. Intervals are returned in order: General > Controlled Load >
+    /// Feed In.
     ///
     /// # Errors
     ///
@@ -394,29 +413,33 @@ impl Amber {
         )
     }
 
-    /// Returns all usage data between the start and end dates for a specific site.
+    /// Returns all usage data between the start and end dates for a specific
+    /// site.
     ///
-    /// This method retrieves historical usage data for the specified site between
-    /// the given date range. The date range cannot exceed 7 days, and the API can
-    /// only return 90 days worth of data.
+    /// This method retrieves historical usage data for the specified site
+    /// between the given date range. The date range cannot exceed 7 days, and
+    /// the API can only return 90 days worth of data.
     ///
     /// # Parameters
     ///
-    /// - `site_id`: ID of the site you are fetching usage for (obtained from [`sites()`])
+    /// - `site_id`: ID of the site you are fetching usage for (obtained from
+    ///   [`sites()`])
     /// - `start_date`: Start date for the usage data (required)
     /// - `end_date`: End date for the usage data (required)
     /// - `resolution`: Optional interval duration (deprecated, will be ignored)
     ///
     /// # Authentication
     ///
-    /// This method requires authentication via API key. The API key can be provided
-    /// either through the `AMBER_API_KEY` environment variable (when using [`Amber::default()`])
-    /// or by explicitly setting it when building the client.
+    /// This method requires authentication via API key. The API key can be
+    /// provided either through the `AMBER_API_KEY` environment variable (when
+    /// using [`Amber::default()`]) or by explicitly setting it when building
+    /// the client.
     ///
     /// # Returns
     ///
-    /// Returns a [`Result`] containing a [`Vec`] of [`Usage`] objects on success.
-    /// Usage data is returned in order: General > Controlled Load > Feed In.
+    /// Returns a [`Result`] containing a [`Vec`] of [`Usage`] objects on
+    /// success. Usage data is returned in order: General > Controlled Load >
+    /// Feed In.
     ///
     /// # Errors
     ///

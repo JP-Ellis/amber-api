@@ -1,10 +1,12 @@
-//! Example: Get current prices for a site
+//! Example: Get current prices for a site.
 //!
-//! This example demonstrates how to retrieve the current price intervals for a site.
+//! This example demonstrates how to retrieve the current price intervals for a
+//! site.
 //!
 //! # Prerequisites
 //!
-//! Set your API key in the `AMBER_API_KEY` environment variable and ensure you have at least one site.
+//! Set your API key in the `AMBER_API_KEY` environment variable and ensure you
+//! have at least one site.
 //!
 //! # Run this example
 //!

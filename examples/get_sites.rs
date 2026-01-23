@@ -1,4 +1,4 @@
-//! Example: Get all sites linked to your account
+//! Example: Get all sites linked to your account.
 //!
 //! This example demonstrates how to retrieve all electricity sites
 //! associated with your Amber account.
