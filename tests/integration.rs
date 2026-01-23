@@ -1,4 +1,4 @@
-//! Integration tests
+//! Integration tests.
 //!
 //! This module contains integration tests for the Amber API client.
 
@@ -179,7 +179,8 @@ fn prices_optional(amber_client: Amber, site_id: String) -> Result<()> {
     Ok(())
 }
 
-/// Test the `current_prices()` method to ensure it works with default arguments.
+/// Test the `current_prices()` method to ensure it works with default
+/// arguments.
 #[rstest]
 fn current_prices_default(amber_client: Amber, site_id: String) -> Result<()> {
     let intervals = amber_client.current_prices().site_id(&site_id).call()?;
@@ -202,7 +203,8 @@ fn current_prices_default(amber_client: Amber, site_id: String) -> Result<()> {
     Ok(())
 }
 
-/// Test the `current_prices()` method to ensure it works with all optional arguments.
+/// Test the `current_prices()` method to ensure it works with all optional
+/// arguments.
 #[rstest]
 fn current_prices_optional(amber_client: Amber, site_id: String) -> Result<()> {
     let intervals = amber_client

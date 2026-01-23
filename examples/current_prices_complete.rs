@@ -1,10 +1,12 @@
-//! Example: Get previous, current, and next price intervals for a site
+//! Example: Get previous, current, and next price intervals for a site.
 //!
-//! This example demonstrates how to retrieve previous, current, and future price intervals for a site using the `previous` and `next` parameters.
+//! This example demonstrates how to retrieve previous, current, and future
+//! price intervals for a site using the `previous` and `next` parameters.
 //!
 //! # Prerequisites
 //!
-//! Set your API key in the `AMBER_API_KEY` environment variable and ensure you have at least one site.
+//! Set your API key in the `AMBER_API_KEY` environment variable and ensure you
+//! have at least one site.
 //!
 //! # Run this example
 //!

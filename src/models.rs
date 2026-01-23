@@ -1,7 +1,7 @@
 //! # Amber Electric API Models
 //!
-//! This module contains all the data structures and types used to interact with the
-//! [Amber Electric Public API](https://api.amber.com.au/v1).
+//! This module contains all the data structures and types used to interact with
+//! the [Amber Electric Public API](https://api.amber.com.au/v1).
 //!
 //! ## Core Configuration
 //!
@@ -66,17 +66,17 @@ use core::fmt;
 use jiff::{Timestamp, civil::Date};
 use serde::Deserialize;
 
-/// Valid Australian states for renewable energy data
+/// Valid Australian states for renewable energy data.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum State {
-    /// New South Wales
+    /// New South Wales.
     Nsw,
-    /// Victoria
+    /// Victoria.
     Vic,
-    /// Queensland
+    /// Queensland.
     Qld,
-    /// South Australia
+    /// South Australia.
     Sa,
 }
 
@@ -92,13 +92,13 @@ impl fmt::Display for State {
     }
 }
 
-/// Valid interval resolution options
+/// Valid interval resolution options.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Resolution {
-    /// 5-minute intervals
+    /// 5-minute intervals.
     FiveMinute = 5,
-    /// 30-minute intervals
+    /// 30-minute intervals.
     ThirtyMinute = 30,
 }
 
@@ -122,20 +122,20 @@ impl From<Resolution> for u32 {
     }
 }
 
-/// Meter channel type
+/// Meter channel type.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub enum ChannelType {
     /// General channel provides continuous power - all of your appliances and
-    /// lights are attached to this channel
+    /// lights are attached to this channel.
     General,
     /// Controlled load channels are only on for a limited time during the day
     /// (usually when the load on the network is low, or generation is high) -
-    /// you may have your hot water system attached to this channel
+    /// you may have your hot water system attached to this channel.
     ControlledLoad,
     /// Feed in channel sends power back to the grid - you will have these types
-    /// of channels if you have solar or batteries
+    /// of channels if you have solar or batteries.
     FeedIn,
 }
 
@@ -165,12 +165,12 @@ impl fmt::Display for ChannelType {
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct Channel {
-    /// Identifier of the channel
+    /// Identifier of the channel.
     pub identifier: String,
-    /// Channel type
+    /// Channel type.
     #[serde(rename = "type")]
     pub channel_type: ChannelType,
-    /// The tariff code of the channel
+    /// The tariff code of the channel.
     pub tariff: String,
 }
 
@@ -206,9 +206,9 @@ pub enum SiteStatus {
     /// you expect to see a site, but don't, you may need to contact
     /// info@amber.com.au to check that the address is correct.
     Pending,
-    /// Site is actively supplied with electricity by Amber
+    /// Site is actively supplied with electricity by Amber.
     Active,
-    /// Old site that Amber no longer supplies
+    /// Old site that Amber no longer supplies.
     Closed,
 }
 
@@ -223,20 +223,20 @@ impl fmt::Display for SiteStatus {
     }
 }
 
-/// Site information
+/// Site information.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct Site {
-    /// Unique Site Identifier
+    /// Unique Site Identifier.
     pub id: String,
-    /// National Metering Identifier (NMI) for the site
+    /// National Metering Identifier (NMI) for the site.
     pub nmi: String,
-    /// List of channels that are readable from your meter
+    /// List of channels that are readable from your meter.
     pub channels: Vec<Channel>,
-    /// The name of the site's network
+    /// The name of the site's network.
     pub network: String,
-    /// Site status
+    /// Site status.
     pub status: SiteStatus,
     /// Date the site became active. This date will be in the future for pending
     /// sites. It may also be undefined, though if it is, contact
@@ -259,19 +259,19 @@ impl fmt::Display for Site {
     }
 }
 
-/// Spike status
+/// Spike status.
 ///
 /// Indicates whether this interval will potentially spike, or is currently in a
-/// spike state
+/// spike state.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub enum SpikeStatus {
-    /// No spike expected or occurring
+    /// No spike expected or occurring.
     None,
-    /// Spike may potentially occur during this interval
+    /// Spike may potentially occur during this interval.
     Potential,
-    /// Spike is currently occurring during this interval
+    /// Spike is currently occurring during this interval.
     Spike,
 }
 
@@ -295,20 +295,20 @@ impl fmt::Display for SpikeStatus {
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub enum PriceDescriptor {
-    /// Negative pricing (deprecated - replaced with `ExtremelyLow`)
+    /// Negative pricing (deprecated - replaced with `ExtremelyLow`).
     #[deprecated(note = "Negative pricing is no longer used. Use `ExtremelyLow` instead.")]
     Negative,
-    /// Extremely low pricing - significant cost savings opportunity
+    /// Extremely low pricing - significant cost savings opportunity.
     ExtremelyLow,
-    /// Very low pricing - good cost savings opportunity
+    /// Very low pricing - good cost savings opportunity.
     VeryLow,
-    /// Low pricing - some cost savings available
+    /// Low pricing - some cost savings available.
     Low,
-    /// Neutral pricing - average market conditions
+    /// Neutral pricing - average market conditions.
     Neutral,
-    /// High pricing - costs above average
+    /// High pricing - costs above average.
     High,
-    /// Spike pricing - very high costs, avoid high usage
+    /// Spike pricing - very high costs, avoid high usage.
     Spike,
 }
 
@@ -329,20 +329,20 @@ impl fmt::Display for PriceDescriptor {
 
 /// Describes the state of renewables.
 ///
-/// Gives you an indication of how green power is right now
+/// Gives you an indication of how green power is right now.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub enum RenewableDescriptor {
-    /// Best renewable conditions - highest percentage of green energy
+    /// Best renewable conditions - highest percentage of green energy.
     Best,
-    /// Great renewable conditions - high percentage of green energy
+    /// Great renewable conditions - high percentage of green energy.
     Great,
-    /// Ok renewable conditions - moderate percentage of green energy
+    /// Ok renewable conditions - moderate percentage of green energy.
     Ok,
-    /// Not great renewable conditions - low percentage of green energy
+    /// Not great renewable conditions - low percentage of green energy.
     NotGreat,
-    /// Worst renewable conditions - lowest percentage of green energy
+    /// Worst renewable conditions - lowest percentage of green energy.
     Worst,
 }
 
@@ -365,9 +365,9 @@ impl fmt::Display for RenewableDescriptor {
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct Range {
-    /// Estimated minimum price (c/kWh)
+    /// Estimated minimum price (c/kWh).
     pub min: f64,
-    /// Estimated maximum price (c/kWh)
+    /// Estimated maximum price (c/kWh).
     pub max: f64,
 }
 
@@ -378,7 +378,7 @@ impl fmt::Display for Range {
     }
 }
 
-/// Advanced price prediction
+/// Advanced price prediction.
 ///
 /// Amber has created an advanced forecast system, that represents Amber's
 /// confidence in the AEMO forecast. The range indicates where Amber thinks the
@@ -409,26 +409,26 @@ impl fmt::Display for AdvancedPrice {
     }
 }
 
-/// Information about how your tariff affects an interval
+/// Information about how your tariff affects an interval.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct TariffInformation {
     /// The Time of Use period that is currently active.
     ///
-    /// Only available if the site in on a time of use tariff
+    /// Only available if the site in on a time of use tariff.
     pub period: Option<TariffPeriod>,
     /// The Time of Use season that is currently active.
     ///
-    /// Only available if the site in on a time of use tariff
+    /// Only available if the site in on a time of use tariff.
     pub season: Option<TariffSeason>,
     /// The block that is currently active.
     ///
-    /// Only available in the site in on a block tariff
+    /// Only available in the site in on a block tariff.
     pub block: Option<u32>,
     /// Is this interval currently in the demand window?
     ///
-    /// Only available if the site in on a demand tariff
+    /// Only available if the site in on a demand tariff.
     pub demand_window: Option<bool>,
 }
 
@@ -458,19 +458,19 @@ impl fmt::Display for TariffInformation {
     }
 }
 
-/// Time of Use period
+/// Time of Use period.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub enum TariffPeriod {
-    /// Off-peak period with lowest electricity rates
+    /// Off-peak period with lowest electricity rates.
     OffPeak,
-    /// Shoulder period with moderate electricity rates
+    /// Shoulder period with moderate electricity rates.
     Shoulder,
     /// Solar sponge period designed to encourage consumption when solar
-    /// generation is high
+    /// generation is high.
     SolarSponge,
-    /// Peak period with highest electricity rates
+    /// Peak period with highest electricity rates.
     Peak,
 }
 
@@ -486,30 +486,31 @@ impl fmt::Display for TariffPeriod {
     }
 }
 
-/// Time of Use season
+/// Time of Use season.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub enum TariffSeason {
-    /// Default tariff season
+    /// Default tariff season.
     Default,
-    /// Summer tariff season with typically higher rates due to increased demand
+    /// Summer tariff season with typically higher rates due to increased
+    /// demand.
     Summer,
-    /// Autumn tariff season with moderate rates
+    /// Autumn tariff season with moderate rates.
     Autumn,
-    /// Winter tariff season with higher rates due to heating demand
+    /// Winter tariff season with higher rates due to heating demand.
     Winter,
-    /// Spring tariff season with moderate rates
+    /// Spring tariff season with moderate rates.
     Spring,
-    /// Non-summer tariff season (autumn, winter, spring combined)
+    /// Non-summer tariff season (autumn, winter, spring combined).
     NonSummer,
-    /// Holiday tariff period with special rates
+    /// Holiday tariff period with special rates.
     Holiday,
-    /// Weekend tariff period with typically lower rates
+    /// Weekend tariff period with typically lower rates.
     Weekend,
-    /// Combined weekend and holiday tariff period
+    /// Combined weekend and holiday tariff period.
     WeekendHoliday,
-    /// Weekday tariff period with standard rates
+    /// Weekday tariff period with standard rates.
     Weekday,
 }
 
@@ -531,7 +532,7 @@ impl fmt::Display for TariffSeason {
     }
 }
 
-/// Base interval structure containing common fields
+/// Base interval structure containing common fields.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
@@ -541,9 +542,9 @@ pub struct BaseInterval {
     /// NEM spot price (c/kWh).
     ///
     /// This is the price generators get paid to generate electricity, and what
-    /// drives the variable component of your perKwh price - includes GST
+    /// drives the variable component of your perKwh price - includes GST.
     pub spot_per_kwh: f64,
-    /// Number of cents you will pay per kilowatt-hour (c/kWh) - includes GST
+    /// Number of cents you will pay per kilowatt-hour (c/kWh) - includes GST.
     pub per_kwh: f64,
     /// Date the interval belongs to (in NEM time).
     ///
@@ -558,15 +559,15 @@ pub struct BaseInterval {
     pub start_time: Timestamp,
     /// End time of the interval in UTC.
     pub end_time: Timestamp,
-    /// Percentage of renewables in the grid
+    /// Percentage of renewables in the grid.
     pub renewables: f64,
-    /// Channel type
+    /// Channel type.
     pub channel_type: ChannelType,
-    /// Tariff information
+    /// Tariff information.
     pub tariff_information: Option<TariffInformation>,
-    /// Spike status
+    /// Spike status.
     pub spike_status: SpikeStatus,
-    /// Price descriptor
+    /// Price descriptor.
     pub descriptor: PriceDescriptor,
 }
 
@@ -596,12 +597,12 @@ impl fmt::Display for BaseInterval {
     }
 }
 
-/// Actual interval with confirmed pricing
+/// Actual interval with confirmed pricing.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct ActualInterval {
-    /// Base interval data with confirmed pricing
+    /// Base interval data with confirmed pricing.
     #[serde(flatten)]
     pub base: BaseInterval,
 }
@@ -613,17 +614,17 @@ impl fmt::Display for ActualInterval {
     }
 }
 
-/// Forecast interval with predicted pricing
+/// Forecast interval with predicted pricing.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct ForecastInterval {
-    /// Base interval data with predicted pricing
+    /// Base interval data with predicted pricing.
     #[serde(flatten)]
     pub base: BaseInterval,
-    /// Price range when volatile
+    /// Price range when volatile.
     pub range: Option<Range>,
-    /// Advanced price prediction
+    /// Advanced price prediction.
     pub advanced_price: Option<AdvancedPrice>,
 }
 
@@ -641,20 +642,20 @@ impl fmt::Display for ForecastInterval {
     }
 }
 
-/// Current interval with real-time pricing
+/// Current interval with real-time pricing.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct CurrentInterval {
-    /// Base interval data with real-time pricing
+    /// Base interval data with real-time pricing.
     #[serde(flatten)]
     pub base: BaseInterval,
-    /// Price range when volatile
+    /// Price range when volatile.
     pub range: Option<Range>,
     /// Shows true the current price is an estimate. Shows false is the price
     /// has been locked in.
     pub estimate: bool,
-    /// Advanced price prediction
+    /// Advanced price prediction.
     pub advanced_price: Option<AdvancedPrice>,
 }
 
@@ -675,16 +676,16 @@ impl fmt::Display for CurrentInterval {
     }
 }
 
-/// Interval enum that can be any of the interval types
+/// Interval enum that can be any of the interval types.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(tag = "type")]
 #[non_exhaustive]
 pub enum Interval {
-    /// Actual interval with confirmed historical pricing data
+    /// Actual interval with confirmed historical pricing data.
     ActualInterval(ActualInterval),
-    /// Forecast interval with predicted future pricing data
+    /// Forecast interval with predicted future pricing data.
     ForecastInterval(ForecastInterval),
-    /// Current interval with real-time pricing data
+    /// Current interval with real-time pricing data.
     CurrentInterval(CurrentInterval),
 }
 
@@ -778,24 +779,24 @@ impl fmt::Display for Interval {
     }
 }
 
-/// Usage data for a specific interval
+/// Usage data for a specific interval.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct Usage {
-    /// Base interval data for usage reporting
+    /// Base interval data for usage reporting.
     #[serde(flatten)]
     pub base: BaseInterval,
-    /// Meter channel identifier
+    /// Meter channel identifier.
     pub channel_identifier: String,
     /// Number of kWh you consumed or generated.
     ///
-    /// Generated numbers will be negative
+    /// Generated numbers will be negative.
     pub kwh: f64,
-    /// Data quality indicator
+    /// Data quality indicator.
     pub quality: UsageQuality,
     /// The total cost of your consumption or generation for this period -
-    /// includes GST
+    /// includes GST.
     pub cost: f64,
 }
 
@@ -810,14 +811,14 @@ impl fmt::Display for Usage {
     }
 }
 
-/// Usage data quality
+/// Usage data quality.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub enum UsageQuality {
-    /// Estimated by the metering company
+    /// Estimated by the metering company.
     Estimated,
-    /// Actual billable data
+    /// Actual billable data.
     Billable,
 }
 
@@ -831,7 +832,7 @@ impl fmt::Display for UsageQuality {
     }
 }
 
-/// Base renewable data structure
+/// Base renewable data structure.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
@@ -851,9 +852,9 @@ pub struct BaseRenewable {
     pub start_time: Timestamp,
     /// End time of the interval in UTC.
     pub end_time: Timestamp,
-    /// Percentage of renewables in the grid
+    /// Percentage of renewables in the grid.
     pub renewables: f64,
-    /// Renewable descriptor
+    /// Renewable descriptor.
     pub descriptor: RenewableDescriptor,
 }
 
@@ -868,12 +869,12 @@ impl fmt::Display for BaseRenewable {
     }
 }
 
-/// Actual renewable data
+/// Actual renewable data.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct ActualRenewable {
-    /// Base renewable data with confirmed historical values
+    /// Base renewable data with confirmed historical values.
     #[serde(flatten)]
     pub base: BaseRenewable,
 }
@@ -885,12 +886,12 @@ impl fmt::Display for ActualRenewable {
     }
 }
 
-/// Forecast renewable data
+/// Forecast renewable data.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct ForecastRenewable {
-    /// Base renewable data with predicted future values
+    /// Base renewable data with predicted future values.
     #[serde(flatten)]
     pub base: BaseRenewable,
 }
@@ -902,12 +903,12 @@ impl fmt::Display for ForecastRenewable {
     }
 }
 
-/// Current renewable data
+/// Current renewable data.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct CurrentRenewable {
-    /// Base renewable data with current real-time values
+    /// Base renewable data with current real-time values.
     #[serde(flatten)]
     pub base: BaseRenewable,
 }
@@ -919,16 +920,16 @@ impl fmt::Display for CurrentRenewable {
     }
 }
 
-/// Renewable enum that can be any of the renewable types
+/// Renewable enum that can be any of the renewable types.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(tag = "type")]
 #[non_exhaustive]
 pub enum Renewable {
-    /// Actual renewable data with confirmed historical values
+    /// Actual renewable data with confirmed historical values.
     ActualRenewable(ActualRenewable),
-    /// Forecast renewable data with predicted future values
+    /// Forecast renewable data with predicted future values.
     ForecastRenewable(ForecastRenewable),
-    /// Current renewable data with real-time values
+    /// Current renewable data with real-time values.
     CurrentRenewable(CurrentRenewable),
 }
 
@@ -999,7 +1000,7 @@ impl Renewable {
         }
     }
 
-    /// Returns the base renewable data
+    /// Returns the base renewable data.
     #[must_use]
     #[inline]
     pub fn as_base_renewable(&self) -> &BaseRenewable {

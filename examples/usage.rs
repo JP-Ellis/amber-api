@@ -1,10 +1,12 @@
-//! Example: Get usage data for a site
+//! Example: Get usage data for a site.
 //!
-//! This example demonstrates how to retrieve usage data for a site for a given date range.
+//! This example demonstrates how to retrieve usage data for a site for a given
+//! date range.
 //!
 //! # Prerequisites
 //!
-//! Set your API key in the `AMBER_API_KEY` environment variable and ensure you have at least one site.
+//! Set your API key in the `AMBER_API_KEY` environment variable and ensure you
+//! have at least one site.
 //!
 //! # Run this example
 //!

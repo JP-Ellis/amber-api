@@ -1,10 +1,12 @@
-//! Example: Get historical prices for a site
+//! Example: Get historical prices for a site.
 //!
-//! This example demonstrates how to retrieve historical price intervals for a site with all optional arguments.
+//! This example demonstrates how to retrieve historical price intervals for a
+//! site with all optional arguments.
 //!
 //! # Prerequisites
 //!
-//! Set your API key in the `AMBER_API_KEY` environment variable and ensure you have at least one site.
+//! Set your API key in the `AMBER_API_KEY` environment variable and ensure you
+//! have at least one site.
 //!
 //! # Run this example
 //!
