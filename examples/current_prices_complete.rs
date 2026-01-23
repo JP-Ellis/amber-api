@@ -23,9 +23,10 @@
 use amber_api::Amber;
 use anyhow::{Result, bail};
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let client = Amber::default();
-    let sites = client.sites()?;
+    let sites = client.sites().await?;
     let site = sites
         .first()
         .ok_or_else(|| anyhow::anyhow!("No sites found"))?;
@@ -36,7 +37,8 @@ fn main() -> Result<()> {
         .site_id(&site.id)
         .previous(2)
         .next(3)
-        .call()?;
+        .call()
+        .await?;
 
     if intervals.len() == 12 {
         println!(

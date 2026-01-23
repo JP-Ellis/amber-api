@@ -3,6 +3,10 @@
 //! This module contains integration tests for the Amber API client.
 
 #![cfg(test)]
+#![expect(
+    clippy::shadow_reuse,
+    reason = "Intentional shadowing with rstest async fixture"
+)]
 
 use amber_api::{Amber, models};
 use anyhow::{Result, anyhow};
@@ -22,11 +26,13 @@ fn amber_client() -> Amber {
 /// Test the `current_renewables()` method to ensure it works with default
 /// arguments.
 #[rstest]
-fn current_renewables_default(amber_client: Amber) -> Result<()> {
+#[tokio::test]
+async fn current_renewables_default(amber_client: Amber) -> Result<()> {
     let renewables = amber_client
         .current_renewables()
         .state(models::State::Vic)
-        .call()?;
+        .call()
+        .await?;
 
     assert_eq!(renewables.len(), 1);
 
@@ -44,14 +50,16 @@ fn current_renewables_default(amber_client: Amber) -> Result<()> {
 /// Test the `current_renewables()` method ensuring it works with all optional
 /// arguments.
 #[rstest]
-fn current_renewables_optional(amber_client: Amber) -> Result<()> {
+#[tokio::test]
+async fn current_renewables_optional(amber_client: Amber) -> Result<()> {
     let renewables = amber_client
         .current_renewables()
         .state(models::State::Vic)
         .previous(6)
         .next(3)
         .resolution(models::Resolution::FiveMinute)
-        .call()?;
+        .call()
+        .await?;
 
     assert_eq!(renewables.len(), 10);
 
@@ -82,8 +90,9 @@ fn current_renewables_optional(amber_client: Amber) -> Result<()> {
 
 /// Test the `sites()` method to ensure it returns expected data structure
 #[rstest]
-fn sites_retrieval(amber_client: Amber) -> Result<()> {
-    let sites = amber_client.sites()?;
+#[tokio::test]
+async fn sites_retrieval(amber_client: Amber) -> Result<()> {
+    let sites = amber_client.sites().await?;
 
     assert!(!sites.is_empty(), "Expected non-empty sites list");
     let site = sites
@@ -111,9 +120,10 @@ fn sites_retrieval(amber_client: Amber) -> Result<()> {
 ///
 /// This is required for additional tests.
 #[fixture]
-fn site_id(amber_client: Amber) -> String {
+async fn site_id(amber_client: Amber) -> String {
     amber_client
         .sites()
+        .await
         .expect("Failed to obtain sites")
         .into_iter()
         .next()
@@ -123,8 +133,10 @@ fn site_id(amber_client: Amber) -> String {
 
 /// Test the `prices()` method to ensure it works with default arguments.
 #[rstest]
-fn prices_default(amber_client: Amber, site_id: String) -> Result<()> {
-    let intervals = amber_client.prices().site_id(&site_id).call()?;
+#[tokio::test]
+async fn prices_default(amber_client: Amber, #[future] site_id: String) -> Result<()> {
+    let site_id = site_id.await;
+    let intervals = amber_client.prices().site_id(&site_id).call().await?;
 
     assert!(!intervals.is_empty(), "Expected non-empty prices list");
     let interval = intervals
@@ -140,7 +152,9 @@ fn prices_default(amber_client: Amber, site_id: String) -> Result<()> {
 
 /// Test the `prices()` method to ensure it works with all optional arguments.
 #[rstest]
-fn prices_optional(amber_client: Amber, site_id: String) -> Result<()> {
+#[tokio::test]
+async fn prices_optional(amber_client: Amber, #[future] site_id: String) -> Result<()> {
+    let site_id = site_id.await;
     let intervals = amber_client
         .prices()
         .site_id(&site_id)
@@ -153,7 +167,8 @@ fn prices_optional(amber_client: Amber, site_id: String) -> Result<()> {
                 .map_err(|e| anyhow!("Failed to create end date: {e}"))?,
         )
         .resolution(models::Resolution::ThirtyMinute)
-        .call()?;
+        .call()
+        .await?;
 
     assert!(!intervals.is_empty(), "Expected non-empty prices list");
     assert_eq!(intervals.len(), 96, "Expected 96 intervals");
@@ -182,8 +197,14 @@ fn prices_optional(amber_client: Amber, site_id: String) -> Result<()> {
 /// Test the `current_prices()` method to ensure it works with default
 /// arguments.
 #[rstest]
-fn current_prices_default(amber_client: Amber, site_id: String) -> Result<()> {
-    let intervals = amber_client.current_prices().site_id(&site_id).call()?;
+#[tokio::test]
+async fn current_prices_default(amber_client: Amber, #[future] site_id: String) -> Result<()> {
+    let site_id = site_id.await;
+    let intervals = amber_client
+        .current_prices()
+        .site_id(&site_id)
+        .call()
+        .await?;
 
     assert!(
         !intervals.is_empty(),
@@ -206,14 +227,17 @@ fn current_prices_default(amber_client: Amber, site_id: String) -> Result<()> {
 /// Test the `current_prices()` method to ensure it works with all optional
 /// arguments.
 #[rstest]
-fn current_prices_optional(amber_client: Amber, site_id: String) -> Result<()> {
+#[tokio::test]
+async fn current_prices_optional(amber_client: Amber, #[future] site_id: String) -> Result<()> {
+    let site_id = site_id.await;
     let intervals = amber_client
         .current_prices()
         .site_id(&site_id)
         .previous(6)
         .next(3)
         .resolution(models::Resolution::ThirtyMinute)
-        .call()?;
+        .call()
+        .await?;
 
     assert!(
         !intervals.is_empty(),
@@ -245,7 +269,9 @@ fn current_prices_optional(amber_client: Amber, site_id: String) -> Result<()> {
 
 /// Test the `usage()` method to ensure it works with required arguments.
 #[rstest]
-fn usage_default(amber_client: Amber, site_id: String) -> Result<()> {
+#[tokio::test]
+async fn usage_default(amber_client: Amber, #[future] site_id: String) -> Result<()> {
+    let site_id = site_id.await;
     let start_date = jiff::civil::Date::new(2025, 11, 1)
         .map_err(|e| anyhow!("Failed to create start date: {e}"))?;
     let end_date = jiff::civil::Date::new(2025, 11, 1)
@@ -256,7 +282,8 @@ fn usage_default(amber_client: Amber, site_id: String) -> Result<()> {
         .site_id(&site_id)
         .start_date(start_date)
         .end_date(end_date)
-        .call()?;
+        .call()
+        .await?;
 
     assert!(!usage_data.is_empty(), "Expected non-empty usage data list");
     let usage = usage_data
@@ -267,7 +294,7 @@ fn usage_default(amber_client: Amber, site_id: String) -> Result<()> {
         !usage.channel_identifier.is_empty(),
         "Channel identifier should not be empty"
     );
-    assert!(usage.kwh >= 0.0, "kWh should be non-negative");
+    assert!(usage.kwh >= 0.0_f64, "kWh should be non-negative");
     assert_eq!(
         usage.base.date, start_date,
         "Date should match requested date"
@@ -278,7 +305,9 @@ fn usage_default(amber_client: Amber, site_id: String) -> Result<()> {
 
 /// Test the `usage()` method with a multi-day date range.
 #[rstest]
-fn usage_multi_day(amber_client: Amber, site_id: String) -> Result<()> {
+#[tokio::test]
+async fn usage_multi_day(amber_client: Amber, #[future] site_id: String) -> Result<()> {
+    let site_id = site_id.await;
     let start_date = jiff::civil::Date::new(2025, 11, 1)
         .map_err(|e| anyhow!("Failed to create start date: {e}"))?;
     let end_date = jiff::civil::Date::new(2025, 11, 3)
@@ -289,7 +318,8 @@ fn usage_multi_day(amber_client: Amber, site_id: String) -> Result<()> {
         .site_id(&site_id)
         .start_date(start_date)
         .end_date(end_date)
-        .call()?;
+        .call()
+        .await?;
 
     assert!(!usage_data.is_empty(), "Expected non-empty usage data list");
 
@@ -320,7 +350,7 @@ fn usage_multi_day(amber_client: Amber, site_id: String) -> Result<()> {
             !usage.channel_identifier.is_empty(),
             "Channel identifier should not be empty"
         );
-        assert!(usage.kwh >= 0.0, "kWh should be non-negative");
+        assert!(usage.kwh >= 0.0_f64, "kWh should be non-negative");
         assert!(usage.cost.is_finite(), "Cost should be a finite number");
         assert!(
             usage.base.start_time < usage.base.end_time,

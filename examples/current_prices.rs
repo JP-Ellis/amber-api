@@ -23,14 +23,15 @@
 use amber_api::Amber;
 use anyhow::{Result, bail};
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let client = Amber::default();
-    let sites = client.sites()?;
+    let sites = client.sites().await?;
     let site = sites
         .first()
         .ok_or_else(|| anyhow::anyhow!("No sites found"))?;
 
-    let intervals = client.current_prices().site_id(&site.id).call()?;
+    let intervals = client.current_prices().site_id(&site.id).call().await?;
     if intervals.is_empty() {
         println!("⚠️ No current prices found");
         bail!("No current prices found");

@@ -25,18 +25,20 @@ jiff = { version = "~0", default-features = false, features = [
   "perf-inline",
   "serde",
 ] }
+reqwest = { version = "~0.13", default-features = false, features = [
+  "json",
+  "query",
+  "rustls",
+] }
 serde = { version = "~1", default-features = false, features = [
   "alloc",
   "derive",
 ] }
 thiserror = "~2"
+tokio = { version = "~1", default-features = false, features = ["time"] }
 tracing = { version = "0.1.41", default-features = false, features = [
   "attributes",
   "log",
-] }
-ureq = { version = "~3", default-features = false, features = [
-  "json",
-  "rustls",
 ] }
 
 [dev-dependencies]
@@ -45,6 +47,7 @@ insta             = "=1.46.1"
 pretty_assertions = "=1.4.1"
 rstest            = "=0.26.1"
 serde_json        = "=1.0.149"
+tokio             = { version = "~1", features = ["macros", "rt-multi-thread"] }
 
 ################################################################################
 ## Features

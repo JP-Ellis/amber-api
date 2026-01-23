@@ -24,9 +24,10 @@ use amber_api::Amber;
 use anyhow::{Result, anyhow, bail};
 use jiff::civil::Date;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let client = Amber::default();
-    let sites = client.sites()?;
+    let sites = client.sites().await?;
     let site = sites
         .first()
         .ok_or_else(|| anyhow::anyhow!("No sites found"))?;
@@ -36,7 +37,8 @@ fn main() -> Result<()> {
         .site_id(&site.id)
         .start_date(Date::new(2025, 8, 1).map_err(|e| anyhow!("Failed to create start date: {e}"))?)
         .end_date(Date::new(2025, 8, 1).map_err(|e| anyhow!("Failed to create end date: {e}"))?)
-        .call()?;
+        .call()
+        .await?;
 
     if usage_data.is_empty() {
         println!("⚠️ No usage data found");

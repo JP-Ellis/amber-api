@@ -18,13 +18,15 @@
 use amber_api::models;
 use anyhow::{Result, bail};
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let client = amber_api::Amber::default();
     let renewables = client
         .current_renewables()
         .state(models::State::Sa)
         .resolution(models::Resolution::FiveMinute)
-        .call()?;
+        .call()
+        .await?;
 
     match renewables.len() {
         0 => {

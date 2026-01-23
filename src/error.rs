@@ -19,7 +19,7 @@
 pub enum AmberError {
     /// HTTP request error.
     #[error("HTTP request failed: {0}")]
-    Http(#[from] ureq::Error),
+    Http(#[from] reqwest::Error),
 
     /// Rate limit exceeded. Contains the number of seconds to wait.
     ///
@@ -34,7 +34,10 @@ pub enum AmberError {
     /// number of retry attempts has been exhausted. The `attempts` field shows
     /// how many retries were attempted, and `retry_after` shows the suggested
     /// wait time in seconds before trying again.
-    #[error("Rate limit exceeded after {attempts} retry attempts. Last retry-after: {retry_after} seconds")]
+    #[error(
+        "Rate limit exceeded after {attempts} retry attempts. \
+        Last retry-after: {retry_after} seconds"
+    )]
     RateLimitExhausted {
         /// Number of retry attempts that were made.
         attempts: u32,
