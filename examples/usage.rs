@@ -35,8 +35,8 @@ async fn main() -> Result<()> {
     let usage_data = client
         .usage()
         .site_id(&site.id)
-        .start_date(Date::new(2025, 8, 1).map_err(|e| anyhow!("Failed to create start date: {e}"))?)
-        .end_date(Date::new(2025, 8, 1).map_err(|e| anyhow!("Failed to create end date: {e}"))?)
+        .start_date(Date::new(2026, 1, 1).map_err(|e| anyhow!("Failed to create start date: {e}"))?)
+        .end_date(Date::new(2026, 1, 1).map_err(|e| anyhow!("Failed to create end date: {e}"))?)
         .call()
         .await?;
 

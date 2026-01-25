@@ -1,0 +1,74 @@
+---
+name: release
+
+permissions:
+  contents: write
+  packages: write
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - Cargo.toml
+      - CHANGELOG.md
+
+env:
+  FORCE_COLOR: '1'
+  CLICOLOR: '1'
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  # Check if this is a release merge
+  check-release:
+    name: Check if release merge
+    runs-on: ubuntu-latest
+    outputs:
+      is-release: ${{ steps.check.outputs.is-release }}
+      version: ${{ steps.check.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+        with:
+          fetch-depth: 2
+
+      - name: Check if release commit
+        id: check
+        run: ./scripts/ci/check-release-commit
+
+  # Publish the release
+  publish-release:
+    name: Publish Release
+    needs: check-release
+    if: needs.check-release.outputs.is-release == 'true'
+    runs-on: ubuntu-latest
+    environment: crates-io
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@v2.67.9
+        with:
+          tool: git-cliff
+
+      - name: Authenticate with crates.io
+        uses: rust-lang/crates-io-auth-action@v1.0.3
+        id: auth
+
+      - name: Publish release
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./scripts/ci/publish-release "${{ needs.check-release.outputs.version }}"

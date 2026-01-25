@@ -4,7 +4,6 @@ default_install_hook_types:
   - post-checkout
   - pre-commit
   - pre-push
-  - prepare-commit-msg
 
 # Unless otherwise specified, all hooks below are run during pre-commit.
 default_stages:
@@ -115,3 +114,24 @@ repos:
         types:
           - rust
         pass_filenames: false
+
+      - id: check-ci-scripts-used
+        name: Check CI scripts are used
+        entry: ./scripts/check-ci-scripts-used
+        language: script
+        pass_filenames: false
+        files: |
+          (?x)^(
+            scripts/ci/.*
+          | \.github/workflows/.*\.yml
+          )$
+
+      - id: check-no-embedded-bash
+        name: Check no embedded bash in workflows
+        entry: ./scripts/check-no-embedded-bash
+        language: script
+        pass_filenames: false
+        files: |-
+          (?x)^(
+            \.github/workflows/.*\.yml
+          )$

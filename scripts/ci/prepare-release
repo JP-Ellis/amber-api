@@ -1,0 +1,212 @@
+#!/bin/bash
+set -euo pipefail
+
+################################################################################
+## Prepare Release
+##
+## Prepares a release by:
+## - Determining the next version (or using provided version)
+## - Updating Cargo.toml with new version
+## - Generating/updating CHANGELOG.md with git-cliff
+## - Committing the changes
+## - Pushing release branch to origin (in CI)
+##
+## This script is designed to be called by CI but can also be run locally.
+##
+## Usage:
+##   ./prepare-release [--dry-run] [VERSION]
+##
+## Arguments:
+##   --dry-run    Update files but don't commit/push (easily reverted with git)
+##   VERSION      Override automatic version detection (optional)
+##
+## Outputs (GITHUB_OUTPUT in CI):
+##   skip         true if release should be skipped, empty otherwise
+##   reason       Human-readable reason for skipping (if skipped)
+##   version      The version being prepared (if not skipped)
+##
+## Exit Codes:
+##   0 - Success (prepared or skipped)
+##   255 - Command failure
+################################################################################
+
+# Source CI utilities
+# shellcheck source=scripts/ci/lib.sh
+source "$(dirname "$0")/lib.sh"
+# shellcheck source=scripts/version.sh
+source "${CI_REPO_ROOT}/scripts/version.sh"
+
+################################################################################
+## Configuration
+################################################################################
+
+DRY_RUN=false
+OVERRIDE_VERSION=""
+
+# Parse arguments
+while [ $# -gt 0 ]; do
+  case "$1" in
+  --dry-run)
+    DRY_RUN=true
+    info "Running in dry-run mode"
+    shift
+    ;;
+  *)
+    OVERRIDE_VERSION="$1"
+    shift
+    ;;
+  esac
+done
+
+################################################################################
+## Validate Environment
+################################################################################
+
+info "Validating environment"
+
+# Assert required commands
+assert_cmd git-cliff
+assert_cmd cargo
+assert_cmd git
+assert_cmd sed
+
+# Check git status
+if [ -n "$(git status --porcelain)" ]; then
+  warn "Working directory has uncommitted changes"
+  if [ "$DRY_RUN" = false ]; then
+    err "Cannot prepare release with uncommitted changes"
+  fi
+fi
+
+################################################################################
+## Determine Version
+################################################################################
+
+if [ -n "$OVERRIDE_VERSION" ]; then
+  info "Using override version: $OVERRIDE_VERSION"
+  NEXT_VERSION="$OVERRIDE_VERSION"
+
+  if ! validate_semver "$NEXT_VERSION"; then
+    err "Invalid version format: $NEXT_VERSION (expected X.Y.Z)"
+  fi
+else
+  info "Determining next version from conventional commits"
+
+  # Check if there are any unreleased changes that would generate a changelog
+  # Use git-cliff to check - if output is empty, nothing to release
+  UNRELEASED_CHANGES=$(git-cliff --unreleased --strip all 2>/dev/null || echo "")
+
+  if [ -z "$UNRELEASED_CHANGES" ]; then
+    info "No substantive changes to release"
+    ci_append_output "skip=true" "reason=No substantive changes to release"
+    exit 0
+  fi
+
+  NEXT_VERSION=$(determine_next_version)
+  info "Next version: $NEXT_VERSION"
+fi
+
+# Check if version is already tagged
+if is_version_tagged "$NEXT_VERSION"; then
+  warn "Version $NEXT_VERSION is already tagged"
+  ci_append_output "skip=true" "reason=Version already tagged"
+  exit 0
+fi
+
+CURRENT_VERSION=$(get_current_version)
+info "Current version: $CURRENT_VERSION"
+info "Next version: $NEXT_VERSION"
+
+################################################################################
+## Update Cargo.toml
+################################################################################
+
+info "Updating Cargo.toml version"
+
+# Update version in Cargo.toml
+# We use sed to replace the version line, preserving whitespace
+# Use [[:space:]]* for BSD sed compatibility (macOS)
+sed -i.bak "s/^\([[:space:]]*version[[:space:]]*=[[:space:]]*\)\".*\"/\1\"$NEXT_VERSION\"/" Cargo.toml
+rm -f Cargo.toml.bak
+
+# Verify the change
+UPDATED_VERSION=$(get_current_version)
+if [ "$UPDATED_VERSION" != "$NEXT_VERSION" ]; then
+  err "Failed to update Cargo.toml version (got $UPDATED_VERSION, expected $NEXT_VERSION)"
+fi
+
+info "Updated Cargo.toml: $CURRENT_VERSION → $NEXT_VERSION"
+
+################################################################################
+## Generate Changelog
+################################################################################
+
+info "Generating changelog for v$NEXT_VERSION"
+
+# Generate only the new version's changelog and prepend to existing file
+# This preserves any manual edits to previous versions
+TAG_NAME=$(format_tag_name "$NEXT_VERSION")
+
+if [ -f CHANGELOG.md ]; then
+  # Prepend new version to existing changelog
+  ensure git-cliff --unreleased --tag "$TAG_NAME" --prepend CHANGELOG.md
+  info "Prepended v$NEXT_VERSION to CHANGELOG.md"
+else
+  # Create new changelog with header
+  ensure git-cliff --unreleased --tag "$TAG_NAME" --output CHANGELOG.md
+  info "Created CHANGELOG.md with v$NEXT_VERSION"
+fi
+
+################################################################################
+## Commit and Push Changes
+################################################################################
+
+if [ "$DRY_RUN" = false ]; then
+  info "Committing changes"
+
+  # Configure git if in CI environment
+  if [ -n "${CI-}" ]; then
+    git config user.name "github-actions[bot]"
+    git config user.email "github-actions[bot]@users.noreply.github.com"
+  fi
+
+  # Add changes
+  ensure git add Cargo.toml CHANGELOG.md
+
+  # Commit with conventional commit message
+  COMMIT_MSG="chore(release): prepare v${NEXT_VERSION}"
+
+  # Check if GPG signing is available
+  if git config user.signingkey >/dev/null 2>&1; then
+    ensure git commit -S -m "$COMMIT_MSG"
+    info "Committed changes (signed)"
+  else
+    ensure git commit -m "$COMMIT_MSG"
+    info "Committed changes"
+  fi
+
+  # Push release branch in CI
+  if [ -n "${CI-}" ]; then
+    info "Creating and pushing release branch"
+
+    # Delete release branch if it exists locally
+    git branch -D release 2>/dev/null || true
+
+    # Create release branch from current HEAD
+    ensure git checkout -b release
+    info "Created release branch from HEAD"
+
+    # Force-push to origin
+    info "Force-pushing release branch to origin"
+    ensure git push --force origin release
+  fi
+
+  info "Release preparation complete"
+
+  # Output version for CI
+  ci_append_output "version=$NEXT_VERSION"
+else
+  info "Dry-run: Skipping commit/push (files modified, use 'git checkout -- Cargo.toml CHANGELOG.md' to revert)"
+fi
+
+info "Successfully prepared release for v${NEXT_VERSION}"
