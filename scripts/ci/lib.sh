@@ -72,3 +72,28 @@ ci_append_output() {
     printf '%s\n' "$@" >>"${GITHUB_OUTPUT}"
   fi
 }
+
+# Authenticate git with GitHub using a token
+#
+# GitHub Actions provide a `GITHUB_TOKEN` secret by default, but if a custom
+# token is provided via the `GH_TOKEN` environment variable (e.g., to
+# authenticate an app or user), this function configures git to use it instead.
+#
+# Usage:
+#   configure_git_auth
+#
+# Environment Variables:
+#   GH_TOKEN - (optional) GitHub token to use for git authentication. If not
+#     set, this function does nothing.
+#
+# Returns:
+#   0 - Always
+#
+configure_git_auth() {
+  if [ -n "${GH_TOKEN-}" ]; then
+    git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/$(git remote get-url origin | sed -E 's#https://github.com/##')"
+    info "Configured git authentication using GH_TOKEN"
+  else
+    info "GH_TOKEN not set; skipping git authentication configuration"
+  fi
+}

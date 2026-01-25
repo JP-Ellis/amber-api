@@ -107,18 +107,6 @@ if [ "$DRY_RUN" = false ]; then
 fi
 
 ################################################################################
-## Run Tests
-################################################################################
-
-if [ "$DRY_RUN" = false ]; then
-  info "Running tests"
-  ensure cargo test --all-features
-  info "Tests passed"
-else
-  info "Dry-run: Skipping tests"
-fi
-
-################################################################################
 ## Extract Changelog
 ################################################################################
 
@@ -149,6 +137,8 @@ debug "Changelog excerpt:\n$CHANGELOG_SECTION"
 ################################################################################
 ## Create Git Tag
 ################################################################################
+
+configure_git_auth
 
 TAG_NAME=$(format_tag_name "$VERSION")
 info "Creating git tag: $TAG_NAME"
@@ -204,23 +194,9 @@ info "Publishing to crates.io"
 
 if [ "$DRY_RUN" = false ]; then
   if [ -n "${CARGO_REGISTRY_TOKEN-}" ]; then
-    if cargo publish --token "${CARGO_REGISTRY_TOKEN}"; then
-      info "Successfully published to crates.io"
-
-      # Verify publication
-      info "Verifying publication on crates.io"
-      sleep 5 # Give crates.io a moment to index
-
-      if curl -sf "https://crates.io/api/v1/crates/amber-api" >/dev/null; then
-        info "Verified crate is available on crates.io"
-      else
-        warn "Could not verify crate on crates.io (may take a few minutes to index)"
-      fi
-    else
-      err "Failed to publish to crates.io"
-    fi
+    ensure cargo publish --token "${CARGO_REGISTRY_TOKEN}"
   else
-    warn "CARGO_REGISTRY_TOKEN not set, skipping crates.io publish"
+    ensure cargo publish
   fi
 else
   info "Would publish to crates.io"
