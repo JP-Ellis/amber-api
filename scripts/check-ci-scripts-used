@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Check that all scripts in scripts/ci/ are referenced in GitHub Actions workflows
+#
+# This script prevents the CI scripts from going out of sync with the workflows.
+# It ensures that every script in scripts/ci/ (except lib.sh which is sourced)
+# is actively used in at least one GitHub Actions workflow file.
+#
+# Exit codes:
+#   0 - All scripts are in use
+#   1 - One or more scripts are not referenced in any workflow
+#
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+# shellcheck source=scripts/util.sh
+source "${SCRIPT_DIR}/util.sh"
+
+# Track if we found any unused scripts
+found_unused=0
+
+# Get all executable files in scripts/ci/ directory
+mapfile -t ci_scripts < <(find scripts/ci -type f -perm +111 | sort)
+
+if [ ${#ci_scripts[@]} -eq 0 ]; then
+  warn "No scripts found in scripts/ci/"
+  exit 0
+fi
+
+info "Checking that all scripts in scripts/ci/ are referenced in GitHub Actions workflows..."
+
+for script in "${ci_scripts[@]}"; do
+  # Search for the script name in all workflow files
+  if grep -q "${script}" .github/workflows/*.yml 2>/dev/null; then
+    info "✓ ${script}"
+  else
+    warn "${script} - NOT FOUND in any workflow"
+    found_unused=1
+  fi
+done
+
+if [ ${found_unused} -ne 0 ]; then
+  err "Some scripts in scripts/ci/ are not referenced in any workflow. Either use these scripts in a workflow or remove them if they're no longer needed."
+else
+  info "All scripts in scripts/ci/ are in active use!"
+  exit 0
+fi

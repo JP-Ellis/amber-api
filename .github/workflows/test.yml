@@ -139,29 +139,17 @@ jobs:
       - name: Install Rust tools
         uses: taiki-e/install-action@02b0f6e578e5f62f4c2e3b578ae0e1a01554138e  # v2.67.4
         with:
-          tool: cargo-hack,cargo-action-fmt
+          tool: cargo-hack
 
-      - name: Clippy
+      - name: Clippy (no dev deps)
         run: |
-          {
-            cargo hack \
-              --feature-powerset \
-              --no-dev-deps \
-              clippy \
-              --workspace \
-              --message-format json \
-              -- \
-              -D warnings
+          cargo hack --feature-powerset --no-dev-deps \
+            clippy --workspace -- -D warnings
 
-            cargo hack \
-              --feature-powerset \
-              clippy \
-              --workspace \
-              --all-targets \
-              --message-format json \
-              -- \
-              -D warnings
-           } | cargo-action-fmt
+      - name: Clippy (with dev deps)
+        run: |
+          cargo hack --feature-powerset \
+            clippy --workspace --all-targets -- -D warnings
 
   format:
     name: Format Rust ${{ matrix.rust }} on  ${{ startsWith(matrix.os, 'macos-') && 'macOS' || startsWith(matrix.os, 'windows-') && 'Windows' || 'Linux' }}
@@ -267,41 +255,10 @@ jobs:
       - name: Run tests
         shell: bash
         env:
-          NEXTEST_EXPERIMENTAL_LIBTEST_JSON: '1'
           AMBER_API_KEY: ${{ secrets.AMBER_API_KEY }}
-        run: |-
-          while IFS=$'\n' read -r line || ! retval=$line; do
-            if ! echo "$line" | jq -e . 2>/dev/null 1>&2; then
-              continue
-            fi
-
-            type=$(echo "$line" | jq -r '.type')
-            event=$(echo "$line" | jq -r '.event')
-            if [ "$type" != "test" ] || [ "$event" != "failed" ]; then
-              continue
-            fi
-
-            echo "Found failed test: $line"
-
-            failed=true
-            name=$(echo "$line" | jq -r '.name')
-            stdout=$(echo "$line" | jq -r '.stdout')
-
-            {
-              echo "## Failed test $name"
-              echo '```'
-              echo "$stdout"
-              echo '```'
-            } >>"$GITHUB_STEP_SUMMARY"
-          done < <(
-            cargo hack nextest run \
-              --feature-powerset \
-              --workspace \
-              --message-format libtest-json
-            printf '%s' "$?"
-          )
-
-          exit "$retval"
+        run: |
+          cargo hack --feature-powerset \
+            nextest run --workspace
 
   examples:
     name: Examples
@@ -322,14 +279,9 @@ jobs:
       - name: Install Rust tools
         uses: taiki-e/install-action@02b0f6e578e5f62f4c2e3b578ae0e1a01554138e  # v2.67.4
         with:
-          tool: cargo-hack,cargo-action-fmt
+          tool: cargo-hack
 
       - name: Run examples
-        run: |-
-          {
-            cargo hack run --example --workspace --message-format json -- \
-              -D warnings
-
-            cargo hack run --example --workspace --all-targets --message-format json -- \
-              -D warnings
-          } | cargo-action-fmt
+        env:
+          AMBER_API_KEY: ${{ secrets.AMBER_API_KEY }}
+        run: ./scripts/ci/run-examples

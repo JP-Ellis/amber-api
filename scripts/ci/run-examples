@@ -1,0 +1,39 @@
+#!/bin/bash
+set -euo pipefail
+
+################################################################################
+## Run Examples
+##
+## Runs all example files in the examples/ directory.
+##
+## Usage:
+##   ./run-examples
+##
+## Exit Codes:
+##   0 - Success, all examples ran successfully
+##   255 - Command failure (example failed to run)
+################################################################################
+
+# Source CI utilities
+# shellcheck source=scripts/ci/lib.sh
+source "$(dirname "$0")/lib.sh"
+
+info "Running examples"
+assert_env AMBER_API_KEY
+
+# Find all example files
+EXAMPLE_COUNT=0
+for example in "${CI_REPO_ROOT}/examples"/*.rs; do
+  if [ -f "$example" ]; then
+    EXAMPLE_NAME=$(basename "${example%.rs}")
+    info "Running example: $EXAMPLE_NAME"
+    ensure cargo run --example "$EXAMPLE_NAME"
+    EXAMPLE_COUNT=$((EXAMPLE_COUNT + 1))
+  fi
+done
+
+if [ "$EXAMPLE_COUNT" -eq 0 ]; then
+  warn "No examples found in examples/ directory"
+else
+  info "Successfully ran $EXAMPLE_COUNT example(s)"
+fi

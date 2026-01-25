@@ -1,0 +1,66 @@
+---
+name: release-pr
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: release-pr
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: '1'
+  CLICOLOR: '1'
+
+jobs:
+  prepare-release:
+    name: Prepare Release PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2.2.1
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@v2.67.9
+        with:
+          tool: git-cliff
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Prepare release
+        id: prepare
+        run: ./scripts/ci/prepare-release
+
+      - name: Create or update PR
+        if: steps.prepare.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: ./scripts/ci/create-or-update-pr
+
+      - name: Skip reason
+        if: steps.prepare.outputs.skip == 'true'
+        run: |-
+          echo "Skipping release PR: ${{ steps.prepare.outputs.reason }}"

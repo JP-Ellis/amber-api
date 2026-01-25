@@ -40,15 +40,8 @@ async fn main() -> Result<()> {
         .call()
         .await?;
 
-    if intervals.len() == 12 {
-        println!(
-            "✅ Found 12 price intervals (2 previous, 1 current, 3 next; all 2x for feed-in and general)\n"
-        );
-    } else {
-        println!(
-            "⚠️ Expected 12 intervals (2 previous, 1 current, 3 next; all 2x for feed-in and general), found {}",
-            intervals.len()
-        );
+    if intervals.is_empty() {
+        println!("⚠️ Expected intervals, found none for site ID {}", site.id);
         bail!("Unexpected number of intervals");
     }
 

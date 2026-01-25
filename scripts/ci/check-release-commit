@@ -1,0 +1,37 @@
+#!/bin/bash
+set -euo pipefail
+
+################################################################################
+## Check Release Commit
+##
+## Checks if the current commit is a release commit by examining the commit
+## message. Outputs results to GITHUB_OUTPUT for workflow control.
+##
+## Usage:
+##   ./check-release-commit
+##
+## Outputs (GITHUB_OUTPUT):
+##   is-release   true if this is a release commit, false otherwise
+##   version      The version being released (only if is-release=true)
+##
+## Exit Codes:
+##   0 - Success (always, even if not a release commit)
+################################################################################
+
+# Source CI utilities
+# shellcheck source=scripts/ci/lib.sh
+source "$(dirname "$0")/lib.sh"
+
+# Get the commit message
+COMMIT_MSG=$(git log -1 --pretty=format:%s)
+info "Commit message: $COMMIT_MSG"
+
+# Check if it matches the release commit pattern
+if [[ $COMMIT_MSG =~ chore\(release\):\ prepare\ v([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+  VERSION="${BASH_REMATCH[1]}"
+  ci_append_output "is-release=true" "version=$VERSION"
+  info "This is a release commit for version $VERSION"
+else
+  ci_append_output "is-release=false"
+  info "Not a release commit"
+fi

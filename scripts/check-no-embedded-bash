@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+# Check that GitHub Actions workflows don't contain embedded bash scripts
+#
+# This script helps maintain clean separation between CI orchestration (YAML)
+# and CI implementation (shell scripts). It detects multi-line bash scripts
+# embedded in workflow files and suggests extracting them to scripts/ci/.
+#
+# What is considered "embedded bash":
+# - Multi-line bash scripts (3+ lines)
+# - Complex piped commands
+# - Scripts with multiple commands chained with && or ;
+#
+# Allowed patterns:
+# - Single command invocations
+# - Simple commands with a single pipe
+# - Calls to scripts in scripts/ci/
+# - Standard GitHub Actions patterns like 'exit 1'
+#
+# Exit codes:
+#   0 - No embedded bash found
+#   1 - Embedded bash detected
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+# shellcheck source=scripts/util.sh
+source "${SCRIPT_DIR}/util.sh"
+
+assert_cmd yq
+assert_cmd find
+
+# Track if we found any embedded bash
+found_embedded=0
+
+info "Checking GitHub Actions workflows for embedded bash scripts..."
+
+# Find all workflow files
+mapfile -t workflow_files < <(find .github/workflows -type f -name '*.yml' | sort)
+
+# Helper function to check if a run command is problematic
+check_run_command() {
+  local run_content="$1"
+  local line_count
+
+  # Skip if it's a call to scripts/ci/
+  if [[ ${run_content} == *"./scripts/ci/"* ]]; then
+    return 1
+  fi
+
+  # Count lines to detect multi-line scripts
+  line_count=$(printf '%s' "${run_content}" | grep -c '^' || true)
+  if [ "${line_count}" -ge 3 ]; then
+    return 0 # Problematic
+  fi
+
+  # Check for complex single-line patterns
+  # Multiple commands with && (more than one &&)
+  if [[ ${run_content} =~ \&\&.*\&\& ]]; then
+    return 0 # Problematic
+  fi
+
+  # Multiple commands with ;
+  if [[ ${run_content} =~ \;.*[^[:space:]] ]] && [[ ! ${run_content} =~ ^[[:space:]]*for[[:space:]] ]]; then
+    return 0 # Problematic
+  fi
+
+  # Complex pipes (more than one pipe)
+  local pipe_count
+  pipe_count=$(printf '%s\n' "${run_content}" | tr -cd '|' | wc -c)
+  if [ "${pipe_count}" -ge 2 ]; then
+    return 0 # Problematic
+  fi
+
+  return 1 # Not problematic
+}
+
+# Helper function to report an issue
+report_issue() {
+  local run_cmd="$1"
+  local issue_line_count
+  local preview
+
+  issue_line_count=$(printf '%s' "${run_cmd}" | grep -c '^' || true)
+
+  if [ "${issue_line_count}" -ge 4 ]; then
+    warn "  Multi-line bash block detected (${issue_line_count} lines)"
+  elif [[ ${run_cmd} =~ \&\&.*\&\& ]]; then
+    warn "  Complex command chain detected"
+  elif [[ ${run_cmd} =~ \;.*[^[:space:]] ]]; then
+    warn "  Semicolon-separated commands detected"
+  else
+    warn "  Complex piped command detected"
+  fi
+
+  # Show a preview of the command (first 80 chars)
+  preview="${run_cmd:0:80}"
+  preview="${preview//$'\n'/ }"
+  warn "    Preview: ${preview}..."
+}
+
+for workflow in "${workflow_files[@]}"; do
+  workflow_has_issues=0
+
+  # Extract all 'run' commands from the workflow using yq
+  # Process each step individually by index to properly handle multi-line run commands
+  step_count=$(yq eval '[.jobs[].steps[]? | select(.run)] | length' "${workflow}" 2>/dev/null || echo "0")
+
+  for ((i = 0; i < step_count; i++)); do
+    # Extract the run command for this specific step
+    run_cmd=$(yq eval "[.jobs[].steps[]? | select(.run)] | .[${i}].run" "${workflow}" 2>/dev/null)
+
+    # Skip empty commands
+    [ -z "${run_cmd}" ] && continue
+
+    if check_run_command "${run_cmd}"; then
+      if [ ${workflow_has_issues} -eq 0 ]; then
+        warn "Issues found in ${workflow}:"
+        workflow_has_issues=1
+        found_embedded=1
+      fi
+      report_issue "${run_cmd}"
+    fi
+  done
+done
+
+if [ ${found_embedded} -eq 1 ]; then
+  err "Embedded bash scripts detected in workflows. Consider extracting complex bash logic to scripts in scripts/ci/."
+else
+  info "No embedded bash scripts found in workflows!"
+  exit 0
+fi

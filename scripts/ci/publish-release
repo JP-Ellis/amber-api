@@ -1,0 +1,240 @@
+#!/bin/bash
+set -euo pipefail
+
+################################################################################
+## Publish Release
+##
+## Publishes a release by:
+## - Verifying version is not already tagged
+## - Running tests
+## - Creating an annotated git tag
+## - Pushing the tag to origin
+## - Creating a GitHub Release with changelog
+## - Publishing to crates.io
+##
+## This script is designed to be called by CI but can also be run locally.
+##
+## Usage:
+##   ./publish-release.sh [--dry-run] VERSION
+##
+## Arguments:
+##   --dry-run    Skip operations that can't be easily reverted (tags, releases, publishes)
+##   VERSION      The version to publish (required, e.g., "2.0.0")
+##
+## Environment Variables:
+##   CARGO_REGISTRY_TOKEN    Required for crates.io publishing
+##   GITHUB_TOKEN            Required for GitHub Release creation (via gh CLI)
+##
+## Exit Codes:
+##   0 - Success, release published
+##   1 - Invalid arguments or validation failure
+##   2 - Version already tagged
+##   255 - Command failure (including crates.io publish failure)
+################################################################################
+
+# Source CI utilities
+# shellcheck source=scripts/ci/lib.sh
+source "$(dirname "$0")/lib.sh"
+# shellcheck source=scripts/version.sh
+source "${CI_REPO_ROOT}/scripts/version.sh"
+
+################################################################################
+## Configuration
+################################################################################
+
+DRY_RUN=false
+VERSION=""
+
+# Parse arguments
+while [ $# -gt 0 ]; do
+  case "$1" in
+  --dry-run)
+    DRY_RUN=true
+    info "Running in dry-run mode"
+    shift
+    ;;
+  *)
+    VERSION="$1"
+    shift
+    ;;
+  esac
+done
+
+################################################################################
+## Validate Arguments
+################################################################################
+
+if [ -z "$VERSION" ]; then
+  err "VERSION argument is required (e.g., ./publish-release.sh 2.0.0)"
+fi
+
+if ! validate_semver "$VERSION"; then
+  err "Invalid version format: $VERSION (expected X.Y.Z)"
+fi
+
+info "Publishing release for version: $VERSION"
+
+################################################################################
+## Validate Environment
+################################################################################
+
+info "Validating environment"
+
+# Assert required commands
+assert_cmd git
+assert_cmd gh
+assert_cmd cargo
+assert_cmd curl
+
+# Check if version is already tagged
+if is_version_tagged "$VERSION"; then
+  warn "Version $VERSION is already tagged"
+  if [ "$DRY_RUN" = false ]; then
+    err "Cannot publish already-tagged version"
+  fi
+fi
+
+# For non-dry-run, check required environment variables
+if [ "$DRY_RUN" = false ]; then
+  if [ -z "${CARGO_REGISTRY_TOKEN-}" ]; then
+    warn "CARGO_REGISTRY_TOKEN not set, crates.io publish will fail"
+  fi
+
+  # gh CLI uses GITHUB_TOKEN or GH_TOKEN automatically
+  if ! gh auth status >/dev/null 2>&1; then
+    err "gh CLI not authenticated (set GITHUB_TOKEN or run 'gh auth login')"
+  fi
+fi
+
+################################################################################
+## Run Tests
+################################################################################
+
+if [ "$DRY_RUN" = false ]; then
+  info "Running tests"
+  ensure cargo test --all-features
+  info "Tests passed"
+else
+  info "Dry-run: Skipping tests"
+fi
+
+################################################################################
+## Extract Changelog
+################################################################################
+
+info "Extracting changelog for v$VERSION"
+
+# Use git-cliff to extract the changelog for this specific version
+TAG_NAME=$(format_tag_name "$VERSION")
+
+# Get the previous tag to define the range
+PREV_TAG=$(git tag -l "${TAG_PREFIX}*" | grep -v "^${TAG_NAME}$" | sort -V | tail -n1)
+
+if [ -n "$PREV_TAG" ]; then
+  # Generate changelog between previous tag and current tag
+  CHANGELOG_SECTION=$(git-cliff "${PREV_TAG}..${TAG_NAME}" --strip all 2>/dev/null || echo "")
+else
+  # No previous tag, generate from beginning
+  CHANGELOG_SECTION=$(git-cliff --strip all 2>/dev/null || echo "")
+fi
+
+if [ -z "$CHANGELOG_SECTION" ]; then
+  warn "Could not generate changelog for v$VERSION"
+  CHANGELOG_SECTION="Release v$VERSION"
+fi
+
+debug "Changelog excerpt:\n$CHANGELOG_SECTION"
+
+################################################################################
+## Create Git Tag
+################################################################################
+
+TAG_NAME=$(format_tag_name "$VERSION")
+info "Creating git tag: $TAG_NAME"
+
+if [ "$DRY_RUN" = false ]; then
+  # Create annotated tag with changelog as message
+  if git config user.signingkey >/dev/null 2>&1; then
+    echo "$CHANGELOG_SECTION" | ensure git tag -a "$TAG_NAME" -F - -s
+    info "Created signed tag: $TAG_NAME"
+  else
+    echo "$CHANGELOG_SECTION" | ensure git tag -a "$TAG_NAME" -F -
+    info "Created tag: $TAG_NAME"
+  fi
+
+  # Push tag to origin
+  ensure git push origin "refs/tags/$TAG_NAME"
+  info "Pushed tag to origin"
+else
+  info "Would create tag: $TAG_NAME"
+  info "Would push tag to origin"
+fi
+
+################################################################################
+## Create GitHub Release
+################################################################################
+
+info "Creating GitHub Release"
+
+if [ "$DRY_RUN" = false ]; then
+  # Create release with gh CLI
+  # The --notes-file option takes a file, so we'll use a temporary file
+  NOTES_FILE=$(mktemp)
+  echo "$CHANGELOG_SECTION" >"$NOTES_FILE"
+
+  ensure gh release create "$TAG_NAME" \
+    --title "Release v$VERSION" \
+    --notes-file "$NOTES_FILE" \
+    --latest
+
+  rm -f "$NOTES_FILE"
+
+  RELEASE_URL=$(gh release view "$TAG_NAME" --json url -q .url)
+  info "GitHub Release created: $RELEASE_URL"
+else
+  info "Would create GitHub Release for tag: $TAG_NAME"
+fi
+
+################################################################################
+## Publish to crates.io
+################################################################################
+
+info "Publishing to crates.io"
+
+if [ "$DRY_RUN" = false ]; then
+  if [ -n "${CARGO_REGISTRY_TOKEN-}" ]; then
+    if cargo publish --token "${CARGO_REGISTRY_TOKEN}"; then
+      info "Successfully published to crates.io"
+
+      # Verify publication
+      info "Verifying publication on crates.io"
+      sleep 5 # Give crates.io a moment to index
+
+      if curl -sf "https://crates.io/api/v1/crates/amber-api" >/dev/null; then
+        info "Verified crate is available on crates.io"
+      else
+        warn "Could not verify crate on crates.io (may take a few minutes to index)"
+      fi
+    else
+      err "Failed to publish to crates.io"
+    fi
+  else
+    warn "CARGO_REGISTRY_TOKEN not set, skipping crates.io publish"
+  fi
+else
+  info "Would publish to crates.io"
+fi
+
+################################################################################
+## Success
+################################################################################
+
+info "Release v$VERSION published successfully"
+
+if [ "$DRY_RUN" = false ]; then
+  info "Tag: $(format_tag_name "$VERSION")"
+  if [ -n "${RELEASE_URL-}" ]; then
+    info "Release: $RELEASE_URL"
+  fi
+  info "Crate: https://crates.io/crates/amber-api"
+fi
