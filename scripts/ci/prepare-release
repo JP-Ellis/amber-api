@@ -82,6 +82,9 @@ fi
 ## Determine Version
 ################################################################################
 
+CURRENT_VERSION=$(get_current_version)
+info "Current version: $CURRENT_VERSION"
+
 if [ -n "$OVERRIDE_VERSION" ]; then
   info "Using override version: $OVERRIDE_VERSION"
   NEXT_VERSION="$OVERRIDE_VERSION"
@@ -91,19 +94,7 @@ if [ -n "$OVERRIDE_VERSION" ]; then
   fi
 else
   info "Determining next version from conventional commits"
-
-  # Check if there are any unreleased changes that would generate a changelog
-  # Use git-cliff to check - if output is empty, nothing to release
-  UNRELEASED_CHANGES=$(git-cliff --unreleased --strip all 2>/dev/null || echo "")
-
-  if [ -z "$UNRELEASED_CHANGES" ]; then
-    info "No substantive changes to release"
-    ci_append_output "skip=true" "reason=No substantive changes to release"
-    exit 0
-  fi
-
   NEXT_VERSION=$(determine_next_version)
-  info "Next version: $NEXT_VERSION"
 fi
 
 # Check if version is already tagged
@@ -113,8 +104,6 @@ if is_version_tagged "$NEXT_VERSION"; then
   exit 0
 fi
 
-CURRENT_VERSION=$(get_current_version)
-info "Current version: $CURRENT_VERSION"
 info "Next version: $NEXT_VERSION"
 
 ################################################################################
@@ -147,14 +136,22 @@ info "Generating changelog for v$NEXT_VERSION"
 # This preserves any manual edits to previous versions
 TAG_NAME=$(format_tag_name "$NEXT_VERSION")
 
-if [ -f CHANGELOG.md ]; then
-  # Prepend new version to existing changelog
-  ensure git-cliff --unreleased --tag "$TAG_NAME" --prepend CHANGELOG.md
-  info "Prepended v$NEXT_VERSION to CHANGELOG.md"
+ensure git-cliff --unreleased --tag "$TAG_NAME" --prepend CHANGELOG.md --output -
+
+info "Prepended v$NEXT_VERSION to CHANGELOG.md"
+
+# Check if CHANGELOG.md was actually modified
+# git status --porcelain returns empty if no changes
+CHANGELOG_STATUS=$(git status --porcelain CHANGELOG.md)
+
+if [ -z "$CHANGELOG_STATUS" ]; then
+  info "No substantive changes to release (CHANGELOG.md unchanged)"
+  # Revert Cargo.toml change
+  git checkout -- Cargo.toml
+  ci_append_output "skip=true" "reason=No substantive changes to release"
+  exit 0
 else
-  # Create new changelog with header
-  ensure git-cliff --unreleased --tag "$TAG_NAME" --output CHANGELOG.md
-  info "Created CHANGELOG.md with v$NEXT_VERSION"
+  info "CHANGELOG.md has substantive changes"
 fi
 
 ################################################################################

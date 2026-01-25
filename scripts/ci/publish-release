@@ -124,22 +124,23 @@ fi
 
 info "Extracting changelog for v$VERSION"
 
-# Use git-cliff to extract the changelog for this specific version
+# Extract the version section from CHANGELOG.md
+# The section starts with ## [TAG_NAME] and ends at the next ## [amber-api/ or EOF
 TAG_NAME=$(format_tag_name "$VERSION")
 
-# Get the previous tag to define the range
-PREV_TAG=$(git tag -l "${TAG_PREFIX}*" | grep -v "^${TAG_NAME}$" | sort -V | tail -n1)
+# Extract from the version header to the next version header (or end of file)
+CHANGELOG_SECTION=$(sed -n "/^## \[${TAG_NAME}\]/,/^## \[${TAG_PREFIX}/p" CHANGELOG.md | sed '$d')
 
-if [ -n "$PREV_TAG" ]; then
-  # Generate changelog between previous tag and current tag
-  CHANGELOG_SECTION=$(git-cliff "${PREV_TAG}..${TAG_NAME}" --strip all 2>/dev/null || echo "")
-else
-  # No previous tag, generate from beginning
-  CHANGELOG_SECTION=$(git-cliff --strip all 2>/dev/null || echo "")
+# If sed captured nothing (no next version), try to end of file
+if [ -z "$CHANGELOG_SECTION" ]; then
+  CHANGELOG_SECTION=$(sed -n "/^## \[${TAG_NAME}\]/,\$p" CHANGELOG.md)
 fi
 
+# Strip the version header line for GitHub Release (keep only the content)
+CHANGELOG_SECTION=$(echo "$CHANGELOG_SECTION" | sed '1d')
+
 if [ -z "$CHANGELOG_SECTION" ]; then
-  warn "Could not generate changelog for v$VERSION"
+  warn "Could not extract changelog for v$VERSION from CHANGELOG.md"
   CHANGELOG_SECTION="Release v$VERSION"
 fi
 
