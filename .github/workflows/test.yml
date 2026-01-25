@@ -203,7 +203,7 @@ jobs:
       - name: Run cargo tarpaulin
         env:
           AMBER_API_KEY: ${{ secrets.AMBER_API_KEY }}
-        run: cargo tarpaulin --out Xml
+        run: cargo tarpaulin --out Xml --timeout 600
 
       - name: Upload Rust coverage artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6.0.0
