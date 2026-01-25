@@ -27,6 +27,7 @@ All notable changes to this project will be documented in this file.
 -   Remove unused prek hook
 -   _(ci)_ Increase tarpaulin timeout
 -   Optimize changelog logic
+-   _(release)_ Prepare v2.0.0
 
 ### Contributors
 
