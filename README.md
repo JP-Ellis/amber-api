@@ -23,10 +23,6 @@
         <td>CI/CD</td>
         <td>
             <a
-                href="https://github.com/JP-Ellis/amber-api/actions/workflows/deploy.yml"><img
-                src="https://img.shields.io/github/actions/workflow/status/JP-Ellis/amber-api/deploy.yml?branch=main&label=CI"
-                alt="CI Status"></a>
-            <a
                 href="https://github.com/JP-Ellis/amber-api/actions/workflows/test.yml"><img
                 src="https://img.shields.io/github/actions/workflow/status/JP-Ellis/amber-api/test.yml?branch=main&label=tests"
                 alt="Test Status"></a>
