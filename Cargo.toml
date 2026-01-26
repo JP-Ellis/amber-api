@@ -19,24 +19,24 @@ repository = "https://github.com/JP-Ellis/amber-api"
 edition = "2024"
 
 [dependencies]
-bon = { version = "~3", default-features = false, features = ["alloc"] }
-jiff = { version = "~0", default-features = false, features = [
+bon = { version = "3", default-features = false, features = ["alloc"] }
+jiff = { version = "0.2", default-features = false, features = [
   "alloc",
   "perf-inline",
   "serde",
 ] }
-reqwest = { version = "~0.13", default-features = false, features = [
+reqwest = { version = "0.13", default-features = false, features = [
   "json",
   "query",
   "rustls",
 ] }
-serde = { version = "~1", default-features = false, features = [
+serde = { version = "1", default-features = false, features = [
   "alloc",
   "derive",
 ] }
-thiserror = "~2"
-tokio = { version = "~1", default-features = false, features = ["time"] }
-tracing = { version = "0.1.41", default-features = false, features = [
+thiserror = "2"
+tokio = { version = "1", default-features = false, features = ["time"] }
+tracing = { version = "0.1", default-features = false, features = [
   "attributes",
   "log",
 ] }
