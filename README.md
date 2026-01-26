@@ -73,26 +73,40 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-amber-api = "~1"
+amber-api = "2"
+tokio = "1"
 ```
+
+> **Note:** As of version 2.0, this library is async and requires an async runtime like [tokio](https://tokio.rs/).
 
 ## Quick Start
 
 ```rust
 use amber_api::Amber;
 
-// Create a client with your API key
-let client = Amber::builder()
-    .api_key("your-api-key-here") // Prefer setting AMBER_API_KEY in an environment variable
-    .build()?;
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    // Create a client with your API key
+    let client = Amber::builder()
+        .api_key("your-api-key-here") // Prefer setting AMBER_API_KEY in an environment variable
+        .build()?;
 
-// Get all your electricity sites
-let sites = client.sites()?;
-println!("Found {} sites", sites.len());
+    // Get all your electricity sites
+    let sites = client.sites().await?;
+    println!("Found {} sites", sites.len());
 
-// Get renewable energy data for Victoria
-let renewables = client.renewables().state("vic").call()?;
-println!("Current renewable: {}%", renewables.percentage);
+    // Get renewable energy data for Victoria
+    let renewables = client.current_renewables()
+        .state(amber_api::models::State::Vic)
+        .call()
+        .await?;
+
+    if let Some(amber_api::models::Renewable::CurrentRenewable(current)) = renewables.first() {
+        println!("Current renewable: {:.1}%", current.base.renewables);
+    }
+
+    Ok(())
+}
 ```
 
 ## Authentication
@@ -105,18 +119,28 @@ You'll need an API key from [Amber Electric](https://app.amber.com.au/developers
 export AMBER_API_KEY="your-api-key-here"
 ```
 
-Then use the default client:
+Then use the default client in an async context:
 
 ```rust
-let client = Amber::default();
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let client = Amber::default();
+    // Use the client...
+    Ok(())
+}
 ```
 
 ### Direct Configuration
 
 ```rust
-let client = Amber::builder()
-    .api_key("your-api-key-here")
-    .build()?;
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let client = Amber::builder()
+        .api_key("your-api-key-here")
+        .build()?;
+    // Use the client...
+    Ok(())
+}
 ```
 
 ## Examples
