@@ -51,6 +51,7 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           branch: release
           base: main
+          draft: always-true
 
           title: Release v${{ steps.prepare.outputs.version }}
           commit-message: 'chore(release): prepare v${{ steps.prepare.outputs.version }}'
