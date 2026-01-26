@@ -79,6 +79,18 @@ if [ -n "$(git status --porcelain)" ]; then
 fi
 
 ################################################################################
+## Check if HEAD is a release commit
+################################################################################
+
+# If the current HEAD commit is a release commit, skip creating a new release
+HEAD_COMMIT_MSG=$(git log -1 --pretty=format:"%s" HEAD)
+if [[ $HEAD_COMMIT_MSG =~ ^chore\(release\): ]]; then
+  info "HEAD commit is a release commit: $HEAD_COMMIT_MSG"
+  ci_append_output "skip=true" "reason=HEAD is already a release commit"
+  exit 0
+fi
+
+################################################################################
 ## Determine Version
 ################################################################################
 
@@ -95,6 +107,13 @@ if [ -n "$OVERRIDE_VERSION" ]; then
 else
   info "Determining next version from conventional commits"
   NEXT_VERSION=$(determine_next_version)
+fi
+
+# Check if version has changed
+if [ "$NEXT_VERSION" = "$CURRENT_VERSION" ]; then
+  info "No version change needed (current: $CURRENT_VERSION)"
+  ci_append_output "skip=true" "reason=No version change needed"
+  exit 0
 fi
 
 # Check if version is already tagged
