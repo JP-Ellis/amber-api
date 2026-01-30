@@ -10,6 +10,7 @@
 
 use amber_api::{Amber, models};
 use anyhow::{Result, anyhow};
+use jiff::ToSpan as _;
 use pretty_assertions::assert_eq;
 use rstest::{fixture, rstest};
 
@@ -21,6 +22,19 @@ use rstest::{fixture, rstest};
 #[fixture]
 fn amber_client() -> Amber {
     Amber::default()
+}
+
+/// Fixture to get a day 7 days ago.
+///
+/// This is useful for tests that need a date in the past (for example, for
+/// usage), but need something in the recent past to ensure data is available.
+#[fixture]
+fn seven_days_ago() -> jiff::civil::Date {
+    jiff::Zoned::now()
+        .round(jiff::Unit::Day)
+        .expect("Failed to get today's date")
+        .date()
+        .saturating_sub(7.days())
 }
 
 /// Test the `current_renewables()` method to ensure it works with default
@@ -153,19 +167,17 @@ async fn prices_default(amber_client: Amber, #[future] site_id: String) -> Resul
 /// Test the `prices()` method to ensure it works with all optional arguments.
 #[rstest]
 #[tokio::test]
-async fn prices_optional(amber_client: Amber, #[future] site_id: String) -> Result<()> {
+async fn prices_optional(
+    amber_client: Amber,
+    #[future] site_id: String,
+    seven_days_ago: jiff::civil::Date,
+) -> Result<()> {
     let site_id = site_id.await;
     let intervals = amber_client
         .prices()
         .site_id(&site_id)
-        .start_date(
-            jiff::civil::Date::new(2025, 8, 1)
-                .map_err(|e| anyhow!("Failed to create start date: {e}"))?,
-        )
-        .end_date(
-            jiff::civil::Date::new(2025, 8, 1)
-                .map_err(|e| anyhow!("Failed to create end date: {e}"))?,
-        )
+        .start_date(seven_days_ago)
+        .end_date(seven_days_ago)
         .resolution(models::Resolution::ThirtyMinute)
         .call()
         .await?;
@@ -270,18 +282,18 @@ async fn current_prices_optional(amber_client: Amber, #[future] site_id: String)
 /// Test the `usage()` method to ensure it works with required arguments.
 #[rstest]
 #[tokio::test]
-async fn usage_default(amber_client: Amber, #[future] site_id: String) -> Result<()> {
+async fn usage_default(
+    amber_client: Amber,
+    #[future] site_id: String,
+    seven_days_ago: jiff::civil::Date,
+) -> Result<()> {
     let site_id = site_id.await;
-    let start_date = jiff::civil::Date::new(2025, 11, 1)
-        .map_err(|e| anyhow!("Failed to create start date: {e}"))?;
-    let end_date = jiff::civil::Date::new(2025, 11, 1)
-        .map_err(|e| anyhow!("Failed to create end date: {e}"))?;
 
     let usage_data = amber_client
         .usage()
         .site_id(&site_id)
-        .start_date(start_date)
-        .end_date(end_date)
+        .start_date(seven_days_ago)
+        .end_date(seven_days_ago)
         .call()
         .await?;
 
@@ -296,7 +308,7 @@ async fn usage_default(amber_client: Amber, #[future] site_id: String) -> Result
     );
     assert!(usage.kwh >= 0.0_f64, "kWh should be non-negative");
     assert_eq!(
-        usage.base.date, start_date,
+        usage.base.date, seven_days_ago,
         "Date should match requested date"
     );
 
@@ -306,18 +318,18 @@ async fn usage_default(amber_client: Amber, #[future] site_id: String) -> Result
 /// Test the `usage()` method with a multi-day date range.
 #[rstest]
 #[tokio::test]
-async fn usage_multi_day(amber_client: Amber, #[future] site_id: String) -> Result<()> {
+async fn usage_multi_day(
+    amber_client: Amber,
+    #[future] site_id: String,
+    seven_days_ago: jiff::civil::Date,
+) -> Result<()> {
     let site_id = site_id.await;
-    let start_date = jiff::civil::Date::new(2025, 11, 1)
-        .map_err(|e| anyhow!("Failed to create start date: {e}"))?;
-    let end_date = jiff::civil::Date::new(2025, 11, 3)
-        .map_err(|e| anyhow!("Failed to create end date: {e}"))?;
 
     let usage_data = amber_client
         .usage()
         .site_id(&site_id)
-        .start_date(start_date)
-        .end_date(end_date)
+        .start_date(seven_days_ago)
+        .end_date(seven_days_ago)
         .call()
         .await?;
 
@@ -336,11 +348,11 @@ async fn usage_multi_day(amber_client: Amber, #[future] site_id: String) -> Resu
         .ok_or_else(|| anyhow!("Expected at least one usage entry"))?;
 
     assert!(
-        earliest_date >= start_date,
+        earliest_date >= seven_days_ago,
         "Earliest usage date should be >= start date"
     );
     assert!(
-        latest_date <= end_date,
+        latest_date <= seven_days_ago,
         "Latest usage date should be <= end date"
     );
 
