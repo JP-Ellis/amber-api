@@ -44,7 +44,7 @@ tracing = { version = "0.1", default-features = false, features = [
 [dev-dependencies]
 anyhow = "=1.0.100"
 insta = "=1.46.1"
-jiff = { version = "=0.2.18", default-features = false, features = [
+jiff = { version = "=0.2.19", default-features = false, features = [
   "alloc",
   "perf-inline",
   "serde",
