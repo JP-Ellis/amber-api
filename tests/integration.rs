@@ -3,6 +3,7 @@
 //! This module contains integration tests for the Amber API client.
 
 #![cfg(test)]
+#![cfg(feature = "std")]
 #![expect(
     clippy::shadow_reuse,
     reason = "Intentional shadowing with rstest async fixture"

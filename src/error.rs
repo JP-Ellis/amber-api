@@ -13,11 +13,14 @@
 //! See [`AmberError::RateLimitExceeded`] and [`AmberError::RateLimitExhausted`]
 //! for more details.
 
+use alloc::string::String;
+
 /// Error types that can occur when using the Amber API client.
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum AmberError {
     /// HTTP request error.
+    #[cfg(feature = "std")]
     #[error("HTTP request failed: {0}")]
     Http(#[from] reqwest::Error),
 

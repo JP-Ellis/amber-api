@@ -3,6 +3,7 @@
 allowed-duplicate-crates = [
   "core-foundation",
   "getrandom",
+  "hashbrown",
   "thiserror",
   "thiserror-impl",
   "webpki-roots",
