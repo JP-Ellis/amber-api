@@ -29,13 +29,13 @@ reqwest = { version = "0.13", default-features = false, features = [
   "json",
   "query",
   "rustls",
-] }
+], optional = true }
 serde = { version = "1", default-features = false, features = [
   "alloc",
   "derive",
 ] }
-thiserror = "2"
-tokio = { version = "1", default-features = false, features = ["time"] }
+thiserror = { version = "2", default-features = false }
+tokio = { version = "1", default-features = false, features = ["time"], optional = true }
 tracing = { version = "0.1", default-features = false, features = [
   "attributes",
   "log",
@@ -60,6 +60,45 @@ tokio = { version = "=1.49.0", features = ["macros", "rt-multi-thread"] }
 ################################################################################
 
 [features]
+default = ["std"]
+std = ["reqwest", "thiserror/std", "tokio"]
+
+################################################################################
+## Examples
+################################################################################
+
+# All examples require the HTTP client (std feature)
+[[example]]
+name = "current_prices"
+required-features = ["std"]
+
+[[example]]
+name = "current_prices_complete"
+required-features = ["std"]
+
+[[example]]
+name = "get_sites"
+required-features = ["std"]
+
+[[example]]
+name = "prices"
+required-features = ["std"]
+
+[[example]]
+name = "renewables"
+required-features = ["std"]
+
+[[example]]
+name = "renewables_complete"
+required-features = ["std"]
+
+[[example]]
+name = "renewables_with_resolution"
+required-features = ["std"]
+
+[[example]]
+name = "usage"
+required-features = ["std"]
 
 ################################################################################
 ## Lints

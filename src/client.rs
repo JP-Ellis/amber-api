@@ -3,6 +3,13 @@
 //! This module provides a client for interacting with the [Amber Electric
 //! Public API](https://api.amber.com.au/v1).
 
+use alloc::{
+    borrow::ToOwned as _,
+    format,
+    string::{String, ToString as _},
+    vec::Vec,
+};
+
 use crate::{error::Result, models};
 use serde::de::DeserializeOwned;
 use tracing::{debug, instrument};
@@ -104,9 +111,12 @@ impl Default for Amber {
 
         Self {
             client,
+            #[cfg(feature = "std")]
             api_key: std::env::var("AMBER_API_KEY")
                 .ok()
                 .filter(|s| !s.is_empty()),
+            #[cfg(not(feature = "std"))]
+            api_key: None,
             base_url: API_BASE_URL.to_owned(),
             max_retries: 3,
             retry_on_rate_limit: true,

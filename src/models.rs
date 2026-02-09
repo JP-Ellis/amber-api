@@ -61,6 +61,7 @@
     reason = "Defining deprecated variant for backwards compatibility"
 )]
 
+use alloc::{format, string::String, vec::Vec};
 use core::fmt;
 
 use jiff::{Timestamp, civil::Date};
@@ -1025,6 +1026,8 @@ impl fmt::Display for Renewable {
 
 #[cfg(test)]
 mod tests {
+    use alloc::{borrow::ToOwned as _, string::ToString as _, vec};
+
     use super::*;
     use anyhow::Result;
     use pretty_assertions::assert_eq;
