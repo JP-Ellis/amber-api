@@ -5,7 +5,7 @@ name = "amber-api"
 description = "Rust client for Amber Electric's API"
 license     = "MIT"
 readme      = "README.md"
-version     = "2.0.0"
+version     = "2.1.0"
 
 categories = ["api-bindings"]
 keywords   = ["amber", "amber-electric", "api"]
