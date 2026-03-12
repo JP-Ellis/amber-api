@@ -146,7 +146,7 @@ jobs:
           components: clippy
 
       - name: Cache Rust
-        uses: Swatinem/rust-cache@c676846f29d98ff6b0106d3608c7ffd4048af17b  # v2.9.0
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4  # v2.9.1
 
       - name: Install Rust tools
         uses: taiki-e/install-action@a37010ded18ff788be4440302bd6830b1ae50d8b  # v2.68.25
@@ -186,7 +186,7 @@ jobs:
           components: rustfmt
 
       - name: Cache Rust
-        uses: Swatinem/rust-cache@c676846f29d98ff6b0106d3608c7ffd4048af17b  # v2.9.0
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4  # v2.9.1
 
       - name: Format
         run: cargo fmt --check
@@ -206,7 +206,7 @@ jobs:
           toolchain: stable
 
       - name: Cache Rust
-        uses: Swatinem/rust-cache@c676846f29d98ff6b0106d3608c7ffd4048af17b  # v2.9.0
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4  # v2.9.1
 
       - name: Install Rust tools
         uses: taiki-e/install-action@a37010ded18ff788be4440302bd6830b1ae50d8b  # v2.68.25
@@ -259,7 +259,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
 
       - name: Cache Rust
-        uses: Swatinem/rust-cache@c676846f29d98ff6b0106d3608c7ffd4048af17b  # v2.9.0
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4  # v2.9.1
 
       - name: Install Rust tools
         uses: taiki-e/install-action@a37010ded18ff788be4440302bd6830b1ae50d8b  # v2.68.25
@@ -289,7 +289,7 @@ jobs:
           components: clippy,rustfmt
 
       - name: Cache Rust
-        uses: Swatinem/rust-cache@c676846f29d98ff6b0106d3608c7ffd4048af17b  # v2.9.0
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4  # v2.9.1
 
       - name: Install Rust tools
         uses: taiki-e/install-action@a37010ded18ff788be4440302bd6830b1ae50d8b  # v2.68.25
