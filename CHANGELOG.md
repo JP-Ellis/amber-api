@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 <!-- markdownlint-disable -->
 
+## [2.1.1](https://github.com/JP-Ellis/amber-api/compare/amber-api/v2.1.0...amber-api/v2.1.1) - _2026-03-31_
+
+### ⚙️ Miscellaneous Tasks
+-   Allow multiple crate versions
+-   _(ci)_ Replace scripts with release-plz
+
+
 ## [amber-api/v2.1.0] _2026-02-14_
 
 ### 🚀 Features
