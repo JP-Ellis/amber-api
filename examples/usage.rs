@@ -21,8 +21,8 @@
 )]
 
 use amber_api::Amber;
-use anyhow::{Result, anyhow, bail};
-use jiff::civil::Date;
+use anyhow::{Result, bail};
+use jiff::ToSpan as _;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -32,11 +32,16 @@ async fn main() -> Result<()> {
         .first()
         .ok_or_else(|| anyhow::anyhow!("No sites found"))?;
 
+    let start_date = jiff::Zoned::now()
+        .round(jiff::Unit::Day)?
+        .date()
+        .saturating_sub(7_i8.days());
+
     let usage_data = client
         .usage()
         .site_id(&site.id)
-        .start_date(Date::new(2026, 1, 1).map_err(|e| anyhow!("Failed to create start date: {e}"))?)
-        .end_date(Date::new(2026, 1, 1).map_err(|e| anyhow!("Failed to create end date: {e}"))?)
+        .start_date(start_date)
+        .end_date(start_date)
         .call()
         .await?;
 
