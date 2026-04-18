@@ -91,16 +91,9 @@ jobs:
       - name: Cache prek
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
         with:
-          path: |-
-            ~/.cache/prek
-          key: >-
-            ${{ runner.os }}-prek-${{
-              hashFiles(
-                '**/.pre-commit-config.yaml',
-                '**/.pre-commit-config.yml'
-              ) }}
-          restore-keys: |-
-            ${{ runner.os }}-prek-
+          path: ~/.cache/prek
+          key: ${{ runner.os }}-prek-${{ hashFiles('**/prek.toml') }}
+          restore-keys: ${{ runner.os }}-prek-
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8  # stable
@@ -113,9 +106,7 @@ jobs:
         with:
           enable-cache: true
           cache-suffix: prek
-          cache-dependency-glob: |-
-            **/.pre-commit-config.yaml
-            **/.pre-commit-config.yml
+          cache-dependency-glob: '**/prek.toml'
 
       - name: Install prek
         run: uv tool install prek

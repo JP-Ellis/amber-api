@@ -1,0 +1,129 @@
+#:schema https://raw.githubusercontent.com/j178/prek/refs/heads/master/prek.schema.json
+#:tombi toml-version = "v1.1.0"
+
+default_install_hook_types = ["commit-msg", "pre-commit", "pre-push"]
+default_stages             = ["pre-commit"]
+
+# Generic hooks that apply to a lot of files
+[[repos]]
+repo  = "https://github.com/pre-commit/pre-commit-hooks"
+rev   = "v6.0.0"
+hooks = [
+  { id = "check-added-large-files" },
+  { id = "check-case-conflict" },
+  { id = "check-executables-have-shebangs" },
+  { id = "check-shebang-scripts-are-executable", exclude = '.*\.rs' },
+  { id = "check-symlinks" },
+  { id = "destroyed-symlinks" },
+  { id = "end-of-file-fixer" },
+  { id = "mixed-line-ending" },
+  { id = "trailing-whitespace", exclude = '(?:.*\.rs|.*/snapshots/.*\.snap)' },
+  { id = "check-toml" },
+  { id = "check-xml" },
+]
+
+# YAML formatting
+[[repos]]
+repo  = "https://github.com/lyz-code/yamlfix/"
+rev   = "1.19.1"
+hooks = [{ id = "yamlfix", args = ["--config-file=.yamlfix.toml"] }]
+
+# JSON5 validation
+[[repos]]
+repo  = "https://gitlab.com/bmares/check-json5"
+rev   = "v1.0.1"
+hooks = [{ id = "check-json5" }]
+
+# JavaScript/TypeScript formatting
+[[repos]]
+repo  = "https://github.com/biomejs/pre-commit"
+rev   = "v2.4.12"
+hooks = [{ id = "biome-check" }]
+
+# TOML formatting
+[[repos]]
+repo  = "https://github.com/tombi-toml/tombi-pre-commit"
+rev   = "v0.9.9"
+hooks = [
+  { id = "tombi-format", exclude = '(^|/)Cargo\.lock$' },
+  { id = "tombi-lint" },
+]
+
+# Python linting and formatting
+[[repos]]
+repo  = "https://github.com/astral-sh/ruff-pre-commit"
+rev   = "v0.15.11"
+hooks = [
+  { id = "ruff-check", args = ["--fix", "--exit-non-zero-on-fix"] },
+  { id = "ruff-format" },
+]
+
+# Commit message linting
+[[repos]]
+repo  = "https://github.com/crate-ci/committed"
+rev   = "v1.1.11"
+hooks = [{ id = "committed" }]
+
+# Markdown linting
+[[repos]]
+repo  = "https://github.com/DavidAnson/markdownlint-cli2"
+rev   = "v0.22.0"
+hooks = [
+  { id = "markdownlint-cli2", exclude = '\.github/PULL_REQUEST_TEMPLATE\.md' }
+]
+
+# Spell checking
+[[repos]]
+repo  = "https://github.com/crate-ci/typos"
+rev   = "v1.45.1"
+hooks = [{ id = "typos" }]
+
+# Shell linting
+[[repos]]
+repo  = "https://github.com/shellcheck-py/shellcheck-py"
+rev   = "v0.10.0.1"
+hooks = [{ id = "shellcheck", args = ["--external-sources"] }]
+
+# Shell formatting
+[[repos]]
+repo  = "https://github.com/scop/pre-commit-shfmt"
+rev   = "v3.11.0-1"
+hooks = [{ id = "shfmt" }]
+
+# Rust local hooks
+[[repos]]
+repo  = "local"
+hooks = [
+  {
+    id             = "cargo-fmt",
+    name           = "cargo fmt",
+    entry          = "cargo fmt --",
+    language       = "system",
+    types          = ["rust"],
+    pass_filenames = false,
+  },
+  {
+    id             = "cargo-clippy",
+    name           = "cargo clippy",
+    entry          = "cargo clippy --all-targets -- -D warnings",
+    language       = "system",
+    types          = ["rust"],
+    pass_filenames = false,
+  },
+  {
+    id             = "check-ci-scripts-used",
+    name           = "Check CI scripts are used",
+    entry          = "./scripts/check-ci-scripts-used",
+    language       = "script",
+    pass_filenames = false,
+    files          = '(?:scripts/ci/.*|\.github/workflows/.*\.yml)',
+  },
+  {
+    id             = "check-no-embedded-bash",
+    name           = "Check no embedded bash in workflows",
+    entry          = "./scripts/check-no-embedded-bash",
+    language       = "script",
+    pass_filenames = false,
+    files          = '\.github/workflows/.*\.yml',
+  },
+]

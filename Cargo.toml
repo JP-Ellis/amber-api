@@ -1,115 +1,95 @@
 #:schema https://www.schemastore.org/cargo.json
+
 [package]
-name = "amber-api"
-
-description = "Rust client for Amber Electric's API"
-license     = "MIT"
-readme      = "README.md"
+name        = "amber-api"
 version     = "2.1.0"
+description = "Rust client for Amber Electric's API"
+readme      = "README.md"
+repository  = "https://github.com/JP-Ellis/amber-api"
+license     = "MIT"
+keywords    = ["amber", "amber-electric", "api"]
+categories  = ["api-bindings"]
 
-categories = ["api-bindings"]
-keywords   = ["amber", "amber-electric", "api"]
-
-authors    = ["JP-Ellis <josh@jpellis.me>"]
-repository = "https://github.com/JP-Ellis/amber-api"
-
-################################################################################
-## Dependencies
-################################################################################
 edition = "2024"
 
+# All examples require the HTTP client (std feature)
+[[example]]
+name              = "current_prices"
+required-features = ["std"]
+
+[[example]]
+name              = "current_prices_complete"
+required-features = ["std"]
+
+[[example]]
+name              = "get_sites"
+required-features = ["std"]
+
+[[example]]
+name              = "prices"
+required-features = ["std"]
+
+[[example]]
+name              = "renewables"
+required-features = ["std"]
+
+[[example]]
+name              = "renewables_complete"
+required-features = ["std"]
+
+[[example]]
+name              = "renewables_with_resolution"
+required-features = ["std"]
+
+[[example]]
+name              = "usage"
+required-features = ["std"]
+
 [dependencies]
-bon = { version = "3", default-features = false, features = ["alloc"] }
-jiff = { version = "0.2", default-features = false, features = [
+bon       = { version = "3", default-features = false, features = ["alloc"] }
+jiff      = { version = "0.2", default-features = false, features = [
   "alloc",
   "perf-inline",
   "serde",
 ] }
-reqwest = { version = "0.13", default-features = false, features = [
+reqwest   = { version = "0.13", default-features = false, features = [
   "json",
   "query",
   "rustls",
 ], optional = true }
-serde = { version = "1", default-features = false, features = [
+serde     = { version = "1", default-features = false, features = [
   "alloc",
   "derive",
 ] }
 thiserror = { version = "2", default-features = false }
-tokio = { version = "1", default-features = false, features = ["time"], optional = true }
-tracing = { version = "0.1", default-features = false, features = [
+tokio     = { version = "1", default-features = false, features = ["time"], optional = true }
+tracing   = { version = "0.1", default-features = false, features = [
   "attributes",
   "log",
 ] }
 
 [dev-dependencies]
-anyhow = "=1.0.102"
-insta = "=1.47.2"
-jiff = { version = "=0.2.23", default-features = false, features = [
+anyhow            = "=1.0.102"
+insta             = "=1.47.2"
+jiff              = { version = "=0.2.23", default-features = false, features = [
   "alloc",
   "perf-inline",
   "serde",
   "std",
 ] }
 pretty_assertions = "=1.4.1"
-rstest = "=0.26.1"
-serde_json = "=1.0.149"
-tokio = { version = "=1.52.1", features = ["macros", "rt-multi-thread"] }
-
-################################################################################
-## Features
-################################################################################
+rstest            = "=0.26.1"
+serde_json        = "=1.0.149"
+tokio             = { version = "=1.52.1", features = [
+  "macros",
+  "rt-multi-thread"
+] }
 
 [features]
 default = ["std"]
-std = ["reqwest", "thiserror/std", "tokio"]
+std     = ["reqwest", "thiserror/std", "tokio"]
 
-################################################################################
-## Examples
-################################################################################
-
-# All examples require the HTTP client (std feature)
-[[example]]
-name = "current_prices"
-required-features = ["std"]
-
-[[example]]
-name = "current_prices_complete"
-required-features = ["std"]
-
-[[example]]
-name = "get_sites"
-required-features = ["std"]
-
-[[example]]
-name = "prices"
-required-features = ["std"]
-
-[[example]]
-name = "renewables"
-required-features = ["std"]
-
-[[example]]
-name = "renewables_complete"
-required-features = ["std"]
-
-[[example]]
-name = "renewables_with_resolution"
-required-features = ["std"]
-
-[[example]]
-name = "usage"
-required-features = ["std"]
-
-################################################################################
-## Lints
-################################################################################
 [lints]
-
-  [lints.rust]
-  future-incompatible = "warn"
-  missing_docs        = "warn"
-  warnings            = "warn"
-
   [lints.clippy]
   # Lower the priority of groups to allow overriding individual lints
   cargo       = { level = "warn", priority = -1 }
@@ -121,9 +101,6 @@ required-features = ["std"]
   style       = { level = "warn", priority = -1 }
   suspicious  = { level = "warn", priority = -1 }
 
-  ########################################
-  # Restriction Lints
-  ########################################
   # The restriction group contains lints which Clippy deems as opt-in. I prefer
   # using an opt-out approach.
   blanket-clippy-restriction-lints = "allow"
@@ -146,16 +123,14 @@ required-features = ["std"]
   single_char_lifetime_names     = "allow"
   unreachable                    = "allow"
 
-  # TODO: Revisit this one https://github.com/rust-lang/rust-clippy/issues/15111
-  # is resolved.
-  return_and_then = "allow"
-
   # TODO: Revisit this once https://github.com/rust-lang/rust-clippy/issues/14056
   # is resolved.
   panic_in_result_fn = "allow"
 
-  # TODO: Re-enable with the next release following rstest 0.25.0
-  empty_structs_with_brackets = "allow"
+  [lints.rust]
+  future-incompatible = "warn"
+  missing_docs        = "warn"
+  warnings            = "warn"
 
   [lints.rustdoc]
   missing-crate-level-docs = "warn"

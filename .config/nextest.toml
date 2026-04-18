@@ -1,7 +1,7 @@
-#:schema https://www.schemastore.org/any.json
-[profile.ci]
-# In CI, we want to run all tests instead of failing fast
-fail-fast = false
+[profile]
+  [profile.ci]
+  # In CI, we want to run all tests instead of failing fast
+  fail-fast = false
 
-# Some tests are flaky in CI
-retries = { backoff = "exponential", count = 2, delay = "10s" }
+  # Some tests are flaky in CI
+  retries = { backoff = "exponential", count = 2, delay = "10s" }
