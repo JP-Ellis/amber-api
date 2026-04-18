@@ -5,9 +5,9 @@
 changelog_update = true
 
 # Release/publish
-git_release_enable = true
-git_tag_name = "{{ package }}/v{{ version }}"
-publish = true
+git_release_enable  = true
+git_tag_name        = "{{ package }}/v{{ version }}"
+publish             = true
 publish_allow_dirty = false
 
 # Pull Request
@@ -15,12 +15,12 @@ pr_draft = true
 
 [changelog]
 protect_breaking_commits = true
-tag_pattern = '^amber-api/v[0-9]+\.[0-9]+\.[0-9]+$'
-commit_preprocessors = [
+tag_pattern              = '^amber-api/v[0-9]+\.[0-9]+\.[0-9]+$'
+commit_preprocessors     = [
   # Remove the PR number added by GitHub when merging PR in UI
   { pattern = '\s*\(#([0-9]+)\)$', replace = "" },
 ]
-commit_parsers = [
+commit_parsers           = [
   # Skip dependency-only chore/fix commits (e.g. from Renovate)
   { message = '^(chore|fix)\(deps.*\)', skip = true },
   # Group commits by type
@@ -46,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 """
 # For information on the tera templating:
 # https://keats.github.io/tera/docs/#introduction
-body = """
+body   = """
 ## [{{ version | trim_start_matches(pat="v") }}]{% if release_link %}({{ release_link }}){% endif %} - _{{ timestamp | date(format="%Y-%m-%d") }}_
 {% for group, commits in commits | group_by(attribute="group") %}
 ### {{ group | striptags | trim | upper_first }}
