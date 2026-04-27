@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 <!-- markdownlint-disable -->
 
+## [2.1.1](https://github.com/JP-Ellis/amber-api/compare/amber-api/v2.1.0...amber-api/v2.1.1) - _2026-04-27_
+
+### 🧪 Testing
+-   Use relative date in examples
+
+### ⚙️ Miscellaneous Tasks
+-   Update to tombi and prek
+-   _(ci)_ Reduce test concurrency
+-   Allow multiple crate versions
+-   _(ci)_ Replace scripts with release-plz
+
+
 ## [amber-api/v2.1.0] _2026-02-14_
 
 ### 🚀 Features
