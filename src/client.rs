@@ -137,8 +137,9 @@ impl Amber {
     /// The number of retries is controlled by the `max_retries` and
     /// `retry_on_rate_limit` configuration options.
     #[instrument(skip(self, query), level = "debug")]
-    async fn get<T: DeserializeOwned, I, K, V>(&self, path: &str, query: I) -> Result<T>
+    async fn get<T, I, K, V>(&self, path: &str, query: I) -> Result<T>
     where
+        T: DeserializeOwned,
         I: IntoIterator<Item = (K, V)>,
         K: AsRef<str>,
         V: AsRef<str>,

@@ -123,8 +123,11 @@ std     = ["reqwest", "thiserror/std", "tokio"]
   single_char_lifetime_names     = "allow"
   unreachable                    = "allow"
 
-  # TODO: Revisit this once https://github.com/rust-lang/rust-clippy/issues/14056
-  # is resolved.
+  # Known upstream issues — revisit when fixed.
+  # Fires on `#[cfg(test)] mod tests`; fixed by
+  # https://github.com/rust-lang/rust-clippy/pull/17346 but not yet released.
+  inline_modules     = "allow"
+  # https://github.com/rust-lang/rust-clippy/issues/14056
   panic_in_result_fn = "allow"
 
   [lints.rust]
