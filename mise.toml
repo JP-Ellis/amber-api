@@ -1,0 +1,24 @@
+#:schema https://mise.jdx.dev/schema/mise.json
+
+# 2026.7.6 both stopped consulting cargo-quickinstall by default and added the
+# setting below to opt back in — older versions cannot parse this file.
+min_version = "2026.7.6"
+
+[settings]
+experimental = true
+
+  [settings.cargo]
+  binstall_quickinstall = true
+
+[tools]
+# Keep in sync with rust-toolchain.toml: mise provisions the toolchain, while
+# rust-toolchain.toml is what rustup (and CI) consult.
+"core:rust" = { version = "1.97", components = "rustfmt,clippy" }
+
+# Binstall ensures fast installs of cargo binaries
+"aqua:cargo-bins/cargo-binstall" = "1"
+
+"cargo:cargo-hack"      = "0.6"
+"cargo:cargo-nextest"   = "0.9"
+"cargo:cargo-tarpaulin" = "0.37"
+"cargo:prek"            = "0.4"
