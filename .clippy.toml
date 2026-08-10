@@ -15,12 +15,13 @@ doc-valid-idents = [
 
 disallowed-methods = []
 
+# Prefer the macros from the `pretty_assertions` crate. The `assert_matches`
+# family is nightly-only, hence `allow-invalid` to avoid warnings on stable.
 disallowed-macros = [
-  # Prefer the macros from the `pretty_assertions` crate
-  "std::assert_eq",
-  "std::assert_matches::assert_matches",
-  "std::assert_matches::debug_assert_matches",
-  "std::assert_ne",
+  { path = "std::assert_eq" },
+  { path = "std::assert_matches::assert_matches", allow-invalid = true },
+  { path = "std::assert_matches::debug_assert_matches", allow-invalid = true },
+  { path = "std::assert_ne" },
 ]
 
 # Prefer semi-colons inside blocks _except_ for single-line blocks
