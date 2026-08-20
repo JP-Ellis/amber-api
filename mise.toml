@@ -13,7 +13,7 @@ experimental = true
 [tools]
 # Keep in sync with rust-toolchain.toml: mise provisions the toolchain, while
 # rust-toolchain.toml is what rustup (and CI) consult.
-"core:rust" = { version = "1.97", components = "rustfmt,clippy" }
+"core:rust" = { version = "1.98", components = "rustfmt,clippy" }
 
 # Binstall ensures fast installs of cargo binaries
 "aqua:cargo-bins/cargo-binstall" = "1"
