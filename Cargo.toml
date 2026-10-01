@@ -103,7 +103,7 @@ std     = ["reqwest", "thiserror/std", "tokio"]
 
   # The restriction group contains lints which Clippy deems as opt-in. I prefer
   # using an opt-out approach.
-  blanket-clippy-restriction-lints = "allow"
+  blanket_clippy_restriction_lints = "allow"
 
   arbitrary_source_item_ordering = "allow"
   cognitive_complexity           = "allow"
@@ -131,9 +131,9 @@ std     = ["reqwest", "thiserror/std", "tokio"]
   panic_in_result_fn = "allow"
 
   [lints.rust]
-  future-incompatible = "warn"
+  future_incompatible = "warn"
   missing_docs        = "warn"
   warnings            = "warn"
 
   [lints.rustdoc]
-  missing-crate-level-docs = "warn"
+  missing_crate_level_docs = "warn"
