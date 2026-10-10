@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 <!-- markdownlint-disable -->
 
+## [2.1.1](https://github.com/JP-Ellis/amber-api/compare/amber-api/v2.1.0...amber-api/v2.1.1) - _2026-10-10_
+
+### 🧪 Testing
+-   Use relative date in examples
+
+### ⚙️ Miscellaneous Tasks
+-   Allow 80-char subjects and 100-char bodies
+-   _(lints)_ Use snake_case lint names
+-   _(renovate)_ Group the rust toolchain pins
+-   Add codecov config with tolerance
+-   Pin the rust toolchain
+-   Silence new clippy lints
+-   Update to tombi and prek
+-   _(ci)_ Reduce test concurrency
+-   Allow multiple crate versions
+-   _(ci)_ Replace scripts with release-plz
+
+
 ## [amber-api/v2.1.0] _2026-02-14_
 
 ### 🚀 Features
