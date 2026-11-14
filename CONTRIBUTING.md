@@ -104,6 +104,8 @@ Optionally, [`mise`](https://mise.jdx.dev/) can provision the toolchain and the 
     export AMBER_API_KEY="your-api-key-here"
     ```
 
+    With `mise`, put `AMBER_API_KEY=your-api-key-here` in a git-ignored `.env` file at the repository root instead. `mise` loads it on entering the directory.
+
 4.  Build the project:
 
     ```bash
