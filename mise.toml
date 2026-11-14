@@ -10,6 +10,10 @@ experimental = true
   [settings.cargo]
   binstall_quickinstall = true
 
+[env]
+_.file          = { path = ".env", redact = true }
+RUSTC_BOOTSTRAP = "1"  # rust-lang/rust-analyzer#17149
+
 [tools]
 # Keep in sync with rust-toolchain.toml: mise provisions the toolchain, while
 # rust-toolchain.toml is what rustup (and CI) consult.
