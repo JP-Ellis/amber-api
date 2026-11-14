@@ -14,7 +14,7 @@ edition = "2024"
 
 [features]
 default = ["std"]
-std     = ["reqwest", "thiserror/std", "tokio"]
+std     = ["dep:bon", "dep:tracing", "reqwest", "thiserror/std", "tokio"]
 
 # All examples require the HTTP client (std feature)
 [[example]]
@@ -50,7 +50,7 @@ name              = "usage"
 required-features = ["std"]
 
 [dependencies]
-bon       = { version = "3", default-features = false, features = ["alloc"] }
+bon       = { version = "3", default-features = false, features = ["alloc"], optional = true }
 jiff      = { version = "0.2", default-features = false, features = [
   "alloc",
   "perf-inline",
@@ -70,7 +70,7 @@ tokio     = { version = "1", default-features = false, features = ["time"], opti
 tracing   = { version = "0.1", default-features = false, features = [
   "attributes",
   "log",
-] }
+], optional = true }
 
 [dev-dependencies]
 anyhow            = "=1.0.104"
