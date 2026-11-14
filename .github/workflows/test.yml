@@ -220,7 +220,7 @@ jobs:
         run: ./scripts/ci/run-examples
 
   test:
-    name: Test Rust ${{ matrix.rust }} on  ${{ startsWith(matrix.os, 'macos-') && 'macOS' || startsWith(matrix.os, 'windows-') && 'Windows' || 'Linux' }}
+    name: Test on ${{ startsWith(matrix.os, 'macos-') && 'macOS' || startsWith(matrix.os, 'windows-') && 'Windows' || 'Linux' }}
 
     runs-on: ${{ matrix.os }}
     if: github.event.pull_request.draft == false || github.event_name != 'pull_request'
@@ -235,23 +235,12 @@ jobs:
           - ubuntu-latest
           - windows-latest
           - macos-latest
-        rust:
-          - stable
-        include:
-          - os: ubuntu-latest
-            rust: beta
-    continue-on-error: ${{ matrix.rust != 'stable' }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30  # v2.0.1
-        with:
-          cache-key: ${{ matrix.rust }}
-
-      - name: Install Rust ${{ matrix.rust }}
-        run: rustup toolchain install ${{ matrix.rust }} --no-self-update
 
       - name: Install Rust tools
         uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39  # v2.90.3
@@ -262,7 +251,6 @@ jobs:
         shell: bash
         env:
           AMBER_API_KEY: ${{ secrets.AMBER_API_KEY }}
-          RUSTUP_TOOLCHAIN: ${{ matrix.rust }}
         run: |-
           cargo hack --feature-powerset \
             nextest run --workspace
