@@ -51,7 +51,7 @@ required-features = ["std"]
 
 [dependencies]
 bon       = { version = "3", default-features = false, features = ["alloc"], optional = true }
-jiff      = { version = "0.2", default-features = false, features = [
+jiff      = { version = "1.0", default-features = false, features = [
   "alloc",
   "perf-inline",
   "serde",
@@ -75,7 +75,7 @@ tracing   = { version = "0.1", default-features = false, features = [
 [dev-dependencies]
 anyhow            = "=1.0.104"
 insta             = "=1.49.0"
-jiff              = { version = "=0.2.46", default-features = false, features = [
+jiff              = { version = "=1.0.1", default-features = false, features = [
   "alloc",
   "perf-inline",
   "serde",
