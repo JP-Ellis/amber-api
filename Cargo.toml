@@ -2,7 +2,7 @@
 
 [package]
 name        = "amber-api"
-version     = "2.1.0"
+version     = "2.1.1"
 description = "Rust client for Amber Electric's API"
 readme      = "README.md"
 repository  = "https://github.com/JP-Ellis/amber-api"
